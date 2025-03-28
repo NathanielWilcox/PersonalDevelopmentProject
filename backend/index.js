@@ -22,6 +22,27 @@ app.get('/userprofiletable', (req, res) => {
 	});
 });
 
+app.post('/userprofiletable', (req, res) => {
+	const q =
+		"INSERT INTO userprofiletable ('name', 'email', 'phone') VALUES (?)";
+	const values = [
+		'name from backend',
+		'email from backend',
+		'phone from backend',
+	];
+
+	dbconn.query(q, [values], (err, data) => {
+		if (err) return res.json(err); // Handle error and send response
+		// If the query was successful, return the response with the inserted data
+		return res.json({ message: 'User profile created successfully!', data });
+	});
+
+	dbconn.query(q, [values], (err, data) => {
+		if (err) return res.json(err);
+		return res.json({ message: 'User profile created successfully!', data });
+	});
+});
+
 app.listen(8800, () => {
 	console.log(
 		`Welcome to the backend server!, running on http://localhost:8800. 
