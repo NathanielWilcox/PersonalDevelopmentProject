@@ -10,6 +10,8 @@ const dbconn = mysql.createConnection({
 	database: 'test',
 });
 
+app.use(express.json());
+
 app.get('/', (req, res) => {
 	res.json('hello from the express backend!');
 });
@@ -25,11 +27,7 @@ app.get('/userprofiletable', (req, res) => {
 app.post('/userprofiletable', (req, res) => {
 	const q =
 		"INSERT INTO userprofiletable ('name', 'email', 'phone') VALUES (?)";
-	const values = [
-		'name from backend',
-		'email from backend',
-		'phone from backend',
-	];
+	const values = [req.body.name, req.body.email, req.body.phone];
 
 	dbconn.query(q, [values], (err, data) => {
 		if (err) return res.json(err); // Handle error and send response
