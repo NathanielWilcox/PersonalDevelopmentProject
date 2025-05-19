@@ -41,9 +41,23 @@ app.post('/userprofiletable', (req, res) => {
 	});
 });
 
+app.post('/login', (req, res) => {
+	const { username, password } = req.body;
+	const q = 'SELECT * FROM userprofiletable WHERE name = ? AND password = ?';
+	const values = [username, password];
+
+	dbconn.query(q, values, (err, data) => {
+		if (err) return res.json({ error: err.message });
+		if (data.length > 0) {
+			return res.json({ message: 'Login successful!', user: data[0] });
+		} else {
+			return res.status(401).json({ message: 'Invalid username or password' });
+		}
+	});
+});
+
 app.listen(8800, () => {
 	console.log(
-		`Welcome to the backend server!, running on http://localhost:8800. 
-        \nThis is the backend server for the React + Node.js + Express + MongoDB example application. `
+		'Welcome to the backend server!, running on http://localhost:8800.\nThis is the backend server for the React + Node.js + Express + MySQL example application.'
 	);
 });

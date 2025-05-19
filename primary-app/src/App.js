@@ -1,9 +1,8 @@
 import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import './App.css';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import NavBar from './Components/NavBar';
 import './index.css';
+import Login from './Pages/Login';
 import Home from './Pages/Home';
 import Map from './Pages/Map';
 import Profile from './Pages/Profile';
@@ -12,17 +11,26 @@ import reportWebVitals from './reportWebVitals';
 const App = () => {
 	return (
 		<>
-			//TODO: Figure out how to use reportWebVitals and actually render
-			something at /
 			<NavBar />
-			<BrowserRouter>
-				<Routes>
-					<Route path="/" element={<Home />} />
-					<Route path="/map" element={<Map />} />
-					<Route path="/profile" element={<Profile />} />
-				</Routes>
-			</BrowserRouter>
+			<Routes>
+				<Route path="/" element={<Navigate to="/home" replace />} />
+				<Route path="/login" element={<Login />} />
+				<Route path="/home" element={<Home />} />
+				<Route path="/map" element={<Map />} />
+				<Route path="/profile" element={<Profile />} />
+			</Routes>
 		</>
 	);
 };
+
+reportWebVitals();
+// If you want to start measuring performance in your app, pass a function
+reportWebVitals((metric) => {
+	// Send to an analytics endpoint
+	console.log(metric);
+});
+
+reportWebVitals(console.log);
+
+
 export default App;
