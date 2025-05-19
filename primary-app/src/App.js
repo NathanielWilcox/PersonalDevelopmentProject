@@ -6,7 +6,6 @@ import Login from './Pages/Login';
 import Home from './Pages/Home';
 import Map from './Pages/Map';
 import Profile from './Pages/Profile';
-import reportWebVitals from './reportWebVitals';
 
 const App = () => {
 	return (
@@ -22,15 +21,5 @@ const App = () => {
 		</>
 	);
 };
-
-reportWebVitals();
-// If you want to start measuring performance in your app, pass a function
-reportWebVitals((metric) => {
-	// Send to an analytics endpoint
-	console.log(metric);
-});
-
-reportWebVitals(console.log);
-
 
 export default App;
