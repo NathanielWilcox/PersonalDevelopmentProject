@@ -9,7 +9,7 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('http://localhost:5000/login', {
+            const response = await fetch('http://localhost:8800/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
@@ -19,6 +19,23 @@ const Login = () => {
             console.log(data);
         } catch (error) {
             console.error('Error:', error);
+        }
+    };
+
+    const handleCreateProfile = async (e) => {
+        e.preventDefault();
+        try {
+            const response = await fetch('http://localhost:8800/userprofiletable', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await response.json();
+            console.log('Profile created:', data);
+            setUsername('');
+            setPassword('');
+        } catch (error) {
+            console.error('Error creating profile:', error);
         }
     };
 
@@ -41,6 +58,7 @@ const Login = () => {
                         onChange={e => setPassword(e.target.value)}
                     />
                     <button type="submit">Login</button>
+                    <button type="button" onClick={handleCreateProfile}>Create Profile</button>
                 </form>
             </div>
         </div>
