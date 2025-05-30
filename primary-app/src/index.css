@@ -53,3 +53,28 @@ nav {
   margin: 0;
   padding: 0;
 }
+.navbar a,
+.navbar .nav-link {
+  color: #fff;
+  text-decoration: none;
+}
+.navbar a.active,
+.navbar .nav-link.active {
+  font-weight: bold;
+  border-bottom: 2px solid #fff;
+}
+.navbar a:hover,
+.navbar .nav-link:hover {
+  color: #00a8ff;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.place-picker-container {
+  padding: 20px;
+}

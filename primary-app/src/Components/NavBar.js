@@ -1,18 +1,28 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import '../Pages/Home.jsx'; // Importing styles from Home.jsx for consistent styling
+import '../Pages/Map.jsx'; // Importing styles from Map.jsx for consistent styling
+import '../Pages/Login.jsx'; // Importing styles from Login.jsx for consistent styling
+import '../Pages/Profile.jsx'; // Importing styles from Profile.jsx for consistent styling
+
 
 const NavBar = () => {
 	return (
 		<nav className="navbar">
-			<ul>
+			<ul className="navbar-left">
 				<li>
-					<NavLink to="/">Home</NavLink>
+					<NavLink to="/home" className="nav-link">Home</NavLink>
 				</li>
 				<li>
-					<NavLink to="/map">Map</NavLink>
+					<NavLink to="/map" className="nav-link">Map</NavLink>
+				</li>
+			</ul>
+			<ul className="navbar-right">
+				<li>
+					<NavLink to="/profile" className="nav-link">Profile</NavLink>
 				</li>
 				<li>
-					<NavLink to="/profile">Profile</NavLink>
+					<NavLink to="/login" className="nav-link">Login</NavLink>
 				</li>
 			</ul>
 		</nav>
