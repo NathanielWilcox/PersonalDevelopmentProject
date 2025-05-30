@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import NavBar from '../Components/NavBar';
+import { useNavigate } from 'react-router-dom';
 import '../index.css';
 
 const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [popupMessage, setPopupMessage] = useState('');
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -14,12 +17,21 @@ const Login = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
             });
-            const data = await response.json();
-            // Handle response (e.g., show success, redirect, etc.)
-            console.log(data);
+            if (response.ok) {
+                setPopupMessage('Login successful');
+                setIsLoggedIn(true);
+                setTimeout(() => {
+                    setPopupMessage('');
+                    navigate('/home');
+                }, 1000);
+            } else {
+                setPopupMessage('Login failed, please check your credentials');
+            }
         } catch (error) {
             console.error('Error:', error);
+            setPopupMessage('Login failed, please try again');
         }
+        setTimeout(() => setPopupMessage(''), 3000);
     };
 
     const handleCreateProfile = async (e) => {
@@ -30,20 +42,37 @@ const Login = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
             });
+            if (response.ok) {
             const data = await response.json();
             console.log('Profile created:', data);
+                setPopupMessage('Profile created');
             setUsername('');
             setPassword('');
+            } else {
+                setPopupMessage('Unable to create profile, try again please');
+            }
         } catch (error) {
             console.error('Error creating profile:', error);
+            setPopupMessage('Unable to create profile, try again please');
         }
+        setTimeout(() => setPopupMessage(''), 3000);
+    };
+    // TODO: make loggedIn state global using Redux.
+    const onLogout = () => {
+        setIsLoggedIn(false);
+        setUsername('');
+        setPassword('');
+        setPopupMessage('Logged out successfully');
+        navigate('/login');
     };
 
     return (
         <div className="login-page">
-            <NavBar />
             <div className="login-container">
                 <h1>Login Portal</h1>
+                {popupMessage && (
+                    <div className="popup-message">{popupMessage}</div>
+                )}
                 <form onSubmit={handleSubmit}>
                     <input
                         type="text"

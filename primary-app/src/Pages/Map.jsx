@@ -1,10 +1,8 @@
 import React from 'react';
-import NavBar from '../Components/NavBar';
 
 const Map = () => {
 	return (
 		<div className="map-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-			<NavBar />
 			<div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100vw', maxWidth: '100%', padding: '2rem 0' }}>
 				<div style={{ width: '90vw', maxWidth: '1200px', height: '60vh', border: '5px solid #ccc', backgroundColor: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
 					<iframe src="https://storage.googleapis.com/maps-solutions-scjh86wbg1/neighborhood-discovery/oawi/neighborhood-discovery.html" title='neighborhood' width="100%" height="100%" style={{ border: 0 }} loading="lazy">Neighborhood</iframe>

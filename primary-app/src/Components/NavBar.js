@@ -6,7 +6,7 @@ import '../Pages/Login.jsx'; // Importing styles from Login.jsx for consistent s
 import '../Pages/Profile.jsx'; // Importing styles from Profile.jsx for consistent styling
 
 
-const NavBar = () => {
+const NavBar = ({ isLoggedIn, onLogout }) => {
 	return (
 		<nav className="navbar">
 			<ul className="navbar-left">
@@ -22,7 +22,12 @@ const NavBar = () => {
 					<NavLink to="/profile" className="nav-link">Profile</NavLink>
 				</li>
 				<li>
+					{isLoggedIn ? (
+					)}
+						<button className="nav-link" onClick={onLogout}>Logout</button>
+					) : (
 					<NavLink to="/login" className="nav-link">Login</NavLink>
+					)}
 				</li>
 			</ul>
 		</nav>

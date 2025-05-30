@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import NavBar from '../Components/NavBar';
 
 const Profile = () => {
 	const [user, setUser] = useState({
 		name: 'John Doe',
 		email: 'johndoe@example.com',
 		bio: 'Software developer with a passion for creating amazing applications.',
-		avatar: 'https://via.placeholder.com/150',
+		avatar: 'https://placehold.co/150x150',
 	});
 
 	const [isEditing, setIsEditing] = useState(false);
@@ -24,7 +23,6 @@ const Profile = () => {
 
 	return (
 		<>
-			<NavBar />
 			<div style={{ textAlign: 'center', padding: '20px' }}>
 				<img
 					src={user.avatar}
