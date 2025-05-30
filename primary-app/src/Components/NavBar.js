@@ -23,10 +23,9 @@ const NavBar = ({ isLoggedIn, onLogout }) => {
 				</li>
 				<li>
 					{isLoggedIn ? (
-					)}
 						<button className="nav-link" onClick={onLogout}>Logout</button>
 					) : (
-					<NavLink to="/login" className="nav-link">Login</NavLink>
+						<NavLink to="/login" className="nav-link">Login</NavLink>
 					)}
 				</li>
 			</ul>
@@ -35,4 +34,12 @@ const NavBar = ({ isLoggedIn, onLogout }) => {
 };
 
 export default NavBar;
-// This component creates a navigation bar with links to the Home, Map, and Profile pages.
+// TODO: Refactor NavBar to use a dedicated CSS file for styling instead of importing component files.
+// TODO: Use Redux or React Context to manage isLoggedIn state globally.
+// TODO: Ensure onLogout properly updates global authentication state and redirects to login page.
+// TODO: Highlight the active NavLink based on the current route.
+// TODO: Add accessibility features (aria-labels, keyboard navigation).
+// TODO: Make NavBar responsive for mobile devices (hamburger menu).
+// TODO: Add user avatar or name when logged in.
+// TODO: Write unit tests for NavBar component.
+// TODO: Optimize NavBar rendering to avoid unnecessary re-renders.

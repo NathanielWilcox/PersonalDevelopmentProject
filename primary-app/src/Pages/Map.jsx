@@ -13,3 +13,9 @@ const Map = () => {
 };
 
 export default Map;
+// TODO: Add a map component that displays a map of the user's neighborhood.
+// TODO: Add a bookmark feature that allows users to save their favorite locations on the map.
+// TODO: Implment neighborhood discovery feature that allows users to discover new neighborhoods based on their interests.
+// Note: 
+// (Add in machine learning model to suggest neighborhoods based on user preferences
+// [learn machine learning compatible with React and JavaScript])

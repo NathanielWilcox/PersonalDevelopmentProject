@@ -43,11 +43,11 @@ const Login = () => {
                 body: JSON.stringify({ username, password })
             });
             if (response.ok) {
-            const data = await response.json();
-            console.log('Profile created:', data);
+                const data = await response.json();
+                console.log('Profile created:', data);
                 setPopupMessage('Profile created');
-            setUsername('');
-            setPassword('');
+                setUsername('');
+                setPassword('');
             } else {
                 setPopupMessage('Unable to create profile, try again please');
             }
@@ -95,3 +95,9 @@ const Login = () => {
 };
 
 export default Login;
+// Note: The above code assumes that the backend server is running on http://localhost:8800
+// TODO: Keep username, password, and popupMessage as local state.
+// TODO: Move isLoggedIn to a global state manager (e.g., Redux or Context API) for app-wide access.
+// TODO: Keep the navigate function from useNavigate local to the component.
+// TODO: Update handleSubmit, handleCreateProfile, and onLogout to interact with global isLoggedIn state (dispatch actions if using Redux/Context).
+// TODO: Keep error handling local unless a global error handler is needed.
