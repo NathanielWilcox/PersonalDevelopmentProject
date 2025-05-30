@@ -1,12 +1,14 @@
+// Description: A simple profile page component that allows users to view and edit their profile information.
+// This component includes a profile picture, name, email, and bio fields.
+// TODO: Update the profile information when isLoggedIn state changes to true. Only display test data when isLoggedIn is false.
 import React, { useState } from 'react';
-import NavBar from '../Components/NavBar';
 
 const Profile = () => {
 	const [user, setUser] = useState({
 		name: 'John Doe',
 		email: 'johndoe@example.com',
 		bio: 'Software developer with a passion for creating amazing applications.',
-		avatar: 'https://via.placeholder.com/150',
+		avatar: 'https://placehold.co/150x150',
 	});
 
 	const [isEditing, setIsEditing] = useState(false);
@@ -24,7 +26,6 @@ const Profile = () => {
 
 	return (
 		<>
-			<NavBar />
 			<div style={{ textAlign: 'center', padding: '20px' }}>
 				<img
 					src={user.avatar}
@@ -95,3 +96,11 @@ const Profile = () => {
 };
 
 export default Profile;
+// TODO: Add functionality to fetch user data from the backend when the component mounts.
+// TODO: Add functionality to update the user profile in the backend when the Save button is clicked.
+// TODO: Add error handling for the fetch requests.
+// TODO: Add loading states for the fetch requests.
+// TODO: Add validation for the form inputs (e.g., email format, required fields).
+// TODO: Add a profile picture selection feature.
+
+// General category: User Profile Management / CRUD Operations
