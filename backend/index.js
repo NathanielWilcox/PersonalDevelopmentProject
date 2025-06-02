@@ -1,7 +1,7 @@
 import express from 'express';
 import mysql from 'mysql';
 import cors from 'cors';
-import dbConfig from './config.js';
+import { dbConfig } from './config.js'; // Import database configuration
 
 const app = express();
 
@@ -64,6 +64,7 @@ app.listen(8800, () => {
 		'Welcome to the backend server!, running on http://localhost:8800.\nThis is the backend server for the React + Node.js + Express + MySQL example application.'
 	);
 	console.log('Database connection established successfully!');
+	// Uncomment the following lines to display available endpoints and database connection details
 	// console.log('You can now access the API endpoints at http://localhost:8800/');
 	// console.log('Available endpoints:');
 	// console.log('- GET /: Returns a welcome message');
