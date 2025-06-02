@@ -1,16 +1,30 @@
 import React from 'react';
 import '../index.css';
+import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
+    const isLoggedIn = useSelector((state) => state.loggedIn.value);
+    const navigate = useNavigate();
+
+    const handleLoginClick = () => {
+        navigate('/login');
+    };
+
     return (
         <div className="home-container">
-            <div className="content">
-                <h1>Welcome to the Home Page</h1>
-                <p>This is the main page of the application.</p>
-            </div>
+            <h1>Welcome to the Creative Community</h1>
+            <p>
+                Connect with artists, musicians, and other creatives. Share your work, discover new talent, and collaborate on projects.
+            </p>
+            {/* {!isLoggedIn && (
+                <button className="login-button" onClick={handleLoginClick}>
+                    Login to Join
+                </button>
+            )} */}
         </div>
     );
-};
+}
 
 export default Home;
 // TODO: Build main component(Feed of posts, profiles, locations, that artists, musicians, and other creatives can share with each other. With a focus on community building and collaboration.)
