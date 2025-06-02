@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { login } from '../store/authSlice';
 import '../index.css';
+import { handleLogin } from '../utils/authActions';
 
 const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [popupMessage, setPopupMessage] = useState('');
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const navigate = useNavigate();
+    const dispatch = useDispatch();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -19,11 +22,14 @@ const Login = () => {
             });
             if (response.ok) {
                 setPopupMessage('Login successful');
-                setIsLoggedIn(true);
+                dispatch(login());
                 setTimeout(() => {
                     setPopupMessage('');
                     navigate('/home');
                 }, 1000);
+                handleLogin(dispatch, { username, password }, navigate);
+            } else if (response.status === 401) {
+                setPopupMessage('Invalid username or password');
             } else {
                 setPopupMessage('Login failed, please check your credentials');
             }
@@ -48,6 +54,7 @@ const Login = () => {
                 setPopupMessage('Profile created');
                 setUsername('');
                 setPassword('');
+                handleLogin(dispatch, { username, password }, navigate);
             } else {
                 setPopupMessage('Unable to create profile, try again please');
             }
@@ -56,14 +63,6 @@ const Login = () => {
             setPopupMessage('Unable to create profile, try again please');
         }
         setTimeout(() => setPopupMessage(''), 3000);
-    };
-    // TODO: make loggedIn state global using Redux.
-    const onLogout = () => {
-        setIsLoggedIn(false);
-        setUsername('');
-        setPassword('');
-        setPopupMessage('Logged out successfully');
-        navigate('/login');
     };
 
     return (
@@ -95,7 +94,7 @@ const Login = () => {
 };
 
 export default Login;
-// Note: The above code assumes that the backend server is running on http://localhost:8800
+// Note: The above code now uses Redux for global isLoggedIn state.
 // TODO: Keep username, password, and popupMessage as local state.
 // TODO: Move isLoggedIn to a global state manager (e.g., Redux or Context API) for app-wide access.
 // TODO: Keep the navigate function from useNavigate local to the component.
