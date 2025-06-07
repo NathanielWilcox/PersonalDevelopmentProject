@@ -2,8 +2,7 @@ import React from 'react';
 import '../index.css';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { handleLogin, handleLogout } from '../utils/authActions';
-import { login, logout } from '../store/authSlice'; // Assuming you have these actions in your authSlice
+import { handleLogin, handleLogout } from '../utils/authActions'; // Only use handleLogout for logout logic, handleLogin is not used in NavBar(see Login component for login logic)
 import Cookies from 'js-cookie';
 
 const NavBar = ({ onLogout }) => {
@@ -49,12 +48,10 @@ const NavBar = ({ onLogout }) => {
     const handleLoginClick = () => {
         // Dispatch login action and navigate to Login page
         // This just sends the user to the login page, actual login logic is handled in Login component
-        dispatch(login());
         navigate('/login', { state: { from: '/home' } }); // Redirect to login page
     };
     const handleLogoutClick = () => {
-        // Dispatch logout action and navigate to home
-        dispatch(logout());
+        // Only use handleLogout for logout logic
         handleLogout(dispatch, onLogout);
     }
   
@@ -78,7 +75,7 @@ const NavBar = ({ onLogout }) => {
                     {isLoggedIn ? (
                         <NavLink to="/home" className="nav-link" onClick={handleLogoutClick}>Logout</NavLink>
                     ) : (
-                        <NavLink to="/home" className="nav-link" onClick={handleLoginClick}>Login</NavLink>
+                        <NavLink to="/login" className="nav-link" onClick={handleLoginClick}>Login</NavLink>
                     )}
                 </li>
             </ul>
