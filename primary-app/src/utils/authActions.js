@@ -1,17 +1,18 @@
-import { logout } from '../store/authSlice';
+import { loginStart, loginSuccess, loginFailure, logout } from '../store/authSlice';
 import Cookies from 'js-cookie';
 
 export const handleLogin = (dispatch, userData, navigate) => {
-    // Dispatch login action to update global state and set isLoggedIn to true
-    dispatch({
-        type: 'auth/login',
-        payload: userData, // userData should contain known profile info
-    });
-    // Optionally set cookies for user info
+    dispatch(loginStart());
+    if (!userData || !userData.username || !userData.password) {
+        dispatch(loginFailure('Username and password are required'));
+        return;
+    }
+    // Simulate token generation (replace with real API call as needed)
+    const token = 'dummy-token';
+    dispatch(loginSuccess({ user: userData, token }));
     if (userData && userData.username) {
         Cookies.set('username', userData.username, { expires: 7 });
     }
-    // Navigate to Home page after login
     navigate('/home', { state: { userData } });
 };
 
