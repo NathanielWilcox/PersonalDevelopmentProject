@@ -11,7 +11,7 @@ const portConfig = {
 };
 
 const googleMapsConfig = {
-    googleMapsApiKey: 'AIzaSyBdWIBw6JeA-YdVq_RaObrU1SKGgNS5Lz8', // Google Maps API key
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY, // Google Maps API key
     googleMapsSourceHTML: 'https://storage.googleapis.com/maps-solutions-scjh86wbg1/neighborhood-discovery/ip2a/neighborhood-discovery.html', // Source HTML for Google Maps
     googleMapsLibraries: ['places', 'geometry'], // Libraries to load with Google Maps
     
