@@ -1,6 +1,7 @@
 // Description: A simple profile page component that allows users to view and edit their profile information.
 // This component includes a profile picture, name, email, and bio fields.
 // TODO: Update the profile information when isLoggedIn state changes to true. Only display test data when isLoggedIn is false.
+// TODO: Add functionality to fetch user data from the backend when the component mounts.
 import React, { useState } from 'react';
 
 const Profile = () => {
