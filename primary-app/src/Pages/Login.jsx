@@ -10,15 +10,25 @@ const Login = () => {
     const [popupMessage, setPopupMessage] = useState('');
     const navigate = useNavigate();
     const dispatch = useDispatch();
+    const loginApiUrl = process.env.REACT_APP_LOGIN_API_URL;
+    const updateProfileApiUrl = process.env.REACT_APP_UPDATE_PROFILE_API_URL;
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('http://localhost:8800/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            });
+            if (!username || !password) {
+                setPopupMessage('Username and password are required');
+                setTimeout(() => setPopupMessage(''), 3000);
+                return;
+            }
+            const response = await fetch(
+                loginApiUrl,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                }
+            );
             if (response.ok) {
                 setPopupMessage('Login successful');
                 setTimeout(() => {
@@ -26,6 +36,15 @@ const Login = () => {
                     navigate('/home');
                 }, 1000);
                 handleLogin(dispatch, { username, password }, navigate);
+                dispatch({ type: 'LOGIN_SUCCESS' });
+                await fetch(
+                    updateProfileApiUrl, 
+                    {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                }
+            );
             } else if (response.status === 401) {
                 setPopupMessage('Invalid username or password');
             } else {
@@ -41,7 +60,7 @@ const Login = () => {
     const handleCreateProfile = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('http://localhost:8800/userprofiletable', {
+            const response = await fetch(process.env.REACT_APP_USER_PROFILE_BASE_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
