@@ -1,16 +1,32 @@
-// Database connection configuration
+import dotenv from 'dotenv';
+dotenv.config();
+
+import { config as dotenvConfig } from 'dotenv';
+dotenvConfig();
+
+const {
+    FRONTEND_HOST,
+    FRONTEND_HOSTNAME,
+    BACKEND_PORT,
+    DB_HOST,
+    DB_USER,
+    DB_CONNECTION_PASSWORD,
+    DB_NAME,
+    DB_PORT
+} = process.env;
+
 const dbConfig = {
-    host: 'localhost',
-    user: 'root',
-    password: 'rootdev04061997!', // replace with your actual password
-    database: 'DevComputerNateSQLServer', // replace with your actual database name
-    port: 3006
+    host: DB_HOST,
+    user: DB_USER,
+    password: DB_CONNECTION_PASSWORD, 
+    database: DB_NAME,
+    port: DB_PORT
 };
 
 // server port configuration
 const serverConfig = {
-    port: 8800,
-    hostname: 'localhost'
+    port: BACKEND_PORT,
+    hostname: FRONTEND_HOSTNAME,
 };
 
 // // JWT configuration (if needed for authentication)
@@ -21,7 +37,7 @@ const serverConfig = {
 
 // cors configuration
 const corsConfig = {
-    origin: 'http://localhost:3000', // replace with your frontend URL
+    origin: FRONTEND_HOST,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 };
