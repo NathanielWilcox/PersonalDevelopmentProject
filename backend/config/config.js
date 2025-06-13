@@ -1,9 +1,6 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import { config as dotenvConfig } from 'dotenv';
-dotenvConfig();
-
 const {
     FRONTEND_HOST,
     FRONTEND_HOSTNAME,
