@@ -2,6 +2,7 @@ import express from 'express';
 import mysql from 'mysql';
 import cors from 'cors';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import { dbConfig } from './config.js'; // Import database configuration
 
 const app = express();
@@ -56,7 +57,11 @@ app.post('/login', (req, res) => {
 		try {
 			const match = await bcrypt.compare(password, user.userpassword);
 			if (match) {
-				return res.json({ message: 'Login successful!', user });
+				// Generate JWT token
+				const payload = { id: user.idusers, username: user.username };
+				const secret = process.env.JWT_SECRET || 'your_jwt_secret';
+				const token = jwt.sign(payload, secret, { expiresIn: '1h' });
+				return res.json({ message: 'Login successful!', user, token });
 			} else {
 				return res.status(401).json({ message: 'Invalid username or password' });
 			}
