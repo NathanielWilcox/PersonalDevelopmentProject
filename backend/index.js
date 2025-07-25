@@ -1,6 +1,7 @@
 import express from 'express';
 import mysql from 'mysql';
 import cors from 'cors';
+import bcrypt from 'bcrypt';
 import { dbConfig } from './config.js'; // Import database configuration
 
 const app = express();
@@ -27,34 +28,40 @@ app.get('/userprofiletable', (req, res) => {
 	});
 });
 
-app.post('/userprofiletable', (req, res) => {
-	const q =
-		"INSERT INTO userprofiletable ('idusers', 'username', 'userpassword') VALUES (?)";
-	const values = [req.body.id, req.body.name, req.body.password];
-
-	dbconn.query(q, [values], (err, data) => {
-		if (err) return res.json(err); // Handle error and send response
-		// If the query was successful, return the response with the inserted data
-		return res.json({ message: 'User profile created successfully!', data });
-	});
-
-	dbconn.query(q, [values], (err, data) => {
-		if (err) return res.json(err);
-		return res.json({ message: 'User profile created successfully!', data });
-	});
+app.post('/userprofiletable', async (req, res) => {
+	const { id, name, password } = req.body;
+	try {
+		// Hash the password before storing
+		const saltRounds = 10;
+		const hashedPassword = await bcrypt.hash(password, saltRounds);
+		const q = "INSERT INTO userprofiletable (idusers, username, userpassword) VALUES (?, ?, ?)";
+		dbconn.query(q, [id, name, hashedPassword], (err, data) => {
+			if (err) return res.json({ error: err.message });
+			return res.json({ message: 'User profile created successfully!', data });
+		});
+	} catch (err) {
+		return res.status(500).json({ error: 'Error hashing password' });
+	}
 });
 
 app.post('/login', (req, res) => {
 	const { username, password } = req.body;
-	const q = 'SELECT * FROM userprofiletable WHERE name = ? AND password = ?';
-	const values = [username, password];
-
-	dbconn.query(q, values, (err, data) => {
+	const q = 'SELECT * FROM userprofiletable WHERE username = ?';
+	dbconn.query(q, [username], async (err, data) => {
 		if (err) return res.json({ error: err.message });
-		if (data.length > 0) {
-			return res.json({ message: 'Login successful!', user: data[0] });
-		} else {
+		if (data.length === 0) {
 			return res.status(401).json({ message: 'Invalid username or password' });
+		}
+		const user = data[0];
+		try {
+			const match = await bcrypt.compare(password, user.userpassword);
+			if (match) {
+				return res.json({ message: 'Login successful!', user });
+			} else {
+				return res.status(401).json({ message: 'Invalid username or password' });
+			}
+		} catch (err) {
+			return res.status(500).json({ error: 'Error comparing passwords' });
 		}
 	});
 });
