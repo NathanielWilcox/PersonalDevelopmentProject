@@ -32,6 +32,13 @@ const getUserProfileLimiter = rateLimit({
 	message: { error: 'Too many requests from this IP, please try again after 15 minutes.' }
 });
 
+// Rate limiter for login endpoint
+const loginLimiter = rateLimit({
+	windowMs: 15 * 60 * 1000, // 15 minutes
+	max: 10, // limit each IP to 10 login requests per windowMs
+	message: { error: 'Too many login attempts from this IP, please try again after 15 minutes.' }
+});
+
 app.get('/', (req, res) => {
 	res.json('hello from the express backend!');
 });
@@ -60,7 +67,7 @@ app.post('/userprofiletable', createUserLimiter, async (req, res) => {
 	}
 });
 
-app.post('/login', (req, res) => {
+app.post('/login', loginLimiter, (req, res) => {
 	const { username, password } = req.body;
 	const q = 'SELECT * FROM userprofiletable WHERE username = ?';
 	dbconn.query(q, [username], async (err, data) => {
