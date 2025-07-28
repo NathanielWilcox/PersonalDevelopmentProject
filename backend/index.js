@@ -4,6 +4,7 @@ import cors from 'cors';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { dbConfig } from './config.js'; // Import database configuration
+import rateLimit from 'express-rate-limit';
 
 const app = express();
 
@@ -17,6 +18,13 @@ const dbconn = mysql.createConnection(dbConfig);
 app.use(cors());
 app.use(express.json());
 
+// Rate limiter for user profile creation endpoint
+const createUserLimiter = rateLimit({
+	windowMs: 15 * 60 * 1000, // 15 minutes
+	max: 10, // limit each IP to 10 requests per windowMs
+	message: { error: 'Too many accounts created from this IP, please try again after 15 minutes.' }
+});
+
 app.get('/', (req, res) => {
 	res.json('hello from the express backend!');
 });
@@ -29,7 +37,7 @@ app.get('/userprofiletable', (req, res) => {
 	});
 });
 
-app.post('/userprofiletable', async (req, res) => {
+app.post('/userprofiletable', createUserLimiter, async (req, res) => {
 	const { id, name, password } = req.body;
 	try {
 		// Hash the password before storing
