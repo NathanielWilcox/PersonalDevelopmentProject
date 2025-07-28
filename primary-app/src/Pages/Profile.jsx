@@ -4,6 +4,23 @@
 // TODO: Add functionality to fetch user data from the backend when the component mounts.
 import React, { useState } from 'react';
 
+// Helper function to validate avatar URLs
+function getSafeAvatarUrl(url) {
+	// Only allow http, https, or data:image URLs
+	if (
+		typeof url === 'string' &&
+		(
+			url.startsWith('https://') ||
+			url.startsWith('http://') ||
+			url.startsWith('data:image/')
+		)
+	) {
+		return url;
+	}
+	// Fallback to a default image if unsafe
+	return 'https://placehold.co/150x150';
+}
+
 const Profile = () => {
 	const [user, setUser] = useState({
 		name: 'John Doe',
@@ -29,7 +46,7 @@ const Profile = () => {
 		<>
 			<div style={{ textAlign: 'center', padding: '20px' }}>
 				<img
-					src={user.avatar}
+					src={getSafeAvatarUrl(user.avatar)}
 					alt="User Avatar"
 					style={{ borderRadius: '50%', width: '150px', height: '150px' }}
 				/>
