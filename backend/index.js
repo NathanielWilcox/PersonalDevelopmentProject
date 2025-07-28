@@ -25,11 +25,18 @@ const createUserLimiter = rateLimit({
 	message: { error: 'Too many accounts created from this IP, please try again after 15 minutes.' }
 });
 
+// Rate limiter for user profile table GET endpoint
+const getUserProfileLimiter = rateLimit({
+	windowMs: 15 * 60 * 1000, // 15 minutes
+	max: 100, // limit each IP to 100 requests per windowMs
+	message: { error: 'Too many requests from this IP, please try again after 15 minutes.' }
+});
+
 app.get('/', (req, res) => {
 	res.json('hello from the express backend!');
 });
 
-app.get('/userprofiletable', (req, res) => {
+app.get('/userprofiletable', getUserProfileLimiter, (req, res) => {
 	const q = 'SELECT * FROM userprofiletable';
 	dbconn.query(q, (err, data) => {
 		if (err) return res.json({ error: err.message }); // Handle error and send response
