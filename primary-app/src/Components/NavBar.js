@@ -37,7 +37,7 @@ const NavBar = ({ onLogout }) => {
     React.useEffect(() => {
         if (isLoggedIn && user) {
             // Set user data as cookies (e.g., username)
-            Cookies.set('username', user.username, { expires: 7 });
+            Cookies.set('username', user.username, { expires: 7, secure: true });
             // Add more user fields as needed
         } else {
             // Remove cookies on logout
