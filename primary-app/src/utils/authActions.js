@@ -30,7 +30,7 @@ export const handleLogin = async (dispatch, userData, navigate) => { // Utility 
         dispatch(loginFailure('Login failed, please try again'));
     }
     if (userData && userData.username) {
-        Cookies.set('username', userData.username, { expires: 7 });
+        Cookies.set('username', userData.username, { expires: 7, secure: true });
     }
     // Navigate to Home page after login
     navigate('/home', { state: { userData } });
