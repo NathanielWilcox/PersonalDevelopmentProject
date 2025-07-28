@@ -6,10 +6,10 @@ import React, { useState } from 'react';
 
 // Helper function to validate avatar URLs
 function getSafeAvatarUrl(url) {
-	// Only allow http, https, or safe data:image URLs (no SVG)
-	if (
-		typeof url === 'string' &&
-		(
+	// Only allow http, https, or safe data:image URLs (no SVG or other dangerous types)
+	if (typeof url === 'string') {
+		// Disallow SVG images explicitly
+		if (
 			url.startsWith('https://') ||
 			url.startsWith('http://') ||
 			(
@@ -19,9 +19,16 @@ function getSafeAvatarUrl(url) {
 				url.startsWith('data:image/gif') ||
 				url.startsWith('data:image/webp')
 			)
-		)
-	) {
-		return url;
+		) {
+			// Extra check: reject any data:image/svg+xml or data:image/svg
+			if (
+				url.startsWith('data:image/svg') ||
+				url.startsWith('data:image/svg+xml')
+			) {
+				return 'https://placehold.co/150x150';
+			}
+			return url;
+		}
 	}
 	// Fallback to a default image if unsafe
 	return 'https://placehold.co/150x150';
