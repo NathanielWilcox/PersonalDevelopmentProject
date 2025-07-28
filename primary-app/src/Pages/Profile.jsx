@@ -6,13 +6,19 @@ import React, { useState } from 'react';
 
 // Helper function to validate avatar URLs
 function getSafeAvatarUrl(url) {
-	// Only allow http, https, or data:image URLs
+	// Only allow http, https, or safe data:image URLs (no SVG)
 	if (
 		typeof url === 'string' &&
 		(
 			url.startsWith('https://') ||
 			url.startsWith('http://') ||
-			url.startsWith('data:image/')
+			(
+				url.startsWith('data:image/png') ||
+				url.startsWith('data:image/jpeg') ||
+				url.startsWith('data:image/jpg') ||
+				url.startsWith('data:image/gif') ||
+				url.startsWith('data:image/webp')
+			)
 		)
 	) {
 		return url;
