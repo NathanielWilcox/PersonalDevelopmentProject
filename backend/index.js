@@ -9,10 +9,14 @@ const app = express();
 
 const dbconn = mysql.createConnection(dbConfig);
 
-// TODO: Use environment variables for sensitive data like database credentials.
-// TODO: Use a configuration file for database connection settings.
-// TODO: Implement methods for handling database queries to avoid code duplication.
-
+// Connect to the MySQL database
+dbconn.connect((err) => {
+	if (err) {
+		console.error('Database connection failed:', err);
+		return;
+	}
+	console.log('Database connected successfully!');
+});
 
 app.use(cors());
 app.use(express.json());
