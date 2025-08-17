@@ -17,7 +17,8 @@ const dbConfig = {
     user: DB_USER,
     password: DB_CONNECTION_PASSWORD, 
     database: DB_NAME,
-    port: DB_PORT
+    port: DB_PORT || 3006, // Default MySQL port
+    connectionLimit: 10, // Optional: Set connection limit for the pool
 };
 
 // server port configuration
