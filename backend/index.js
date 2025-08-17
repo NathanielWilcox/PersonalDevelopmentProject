@@ -1,9 +1,9 @@
 import express from 'express';
 import mysql from 'mysql';
 import cors from 'cors';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { dbConfig } from './config.js'; // Import database configuration
+import { dbConfig } from './config/config.js'; // Import database configuration
 import rateLimit from 'express-rate-limit';
 
 const app = express();
