@@ -1,29 +1,26 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+// Destructure environment variables
 const {
-    FRONTEND_HOST,
-    FRONTEND_HOSTNAME,
-    BACKEND_PORT,
-    DB_HOST,
-    DB_USER,
-    DB_CONNECTION_PASSWORD,
-    DB_NAME,
-    DB_PORT
+    REACT_APP_BACKEND_PORT,
+    REACT_APP_FRONTEND_HOST,
+    REACT_APP_FRONTEND_HOSTNAME,
 } = process.env;
 
+// Database configuration
 const dbConfig = {
-    host: DB_HOST,
-    user: DB_USER,
-    password: DB_CONNECTION_PASSWORD, 
-    database: DB_NAME,
-    port: DB_PORT
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_CONNECTION_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT,
 };
 
 // server port configuration
 const serverConfig = {
-    port: BACKEND_PORT,
-    hostname: FRONTEND_HOSTNAME,
+    port: REACT_APP_BACKEND_PORT,
+    hostname: REACT_APP_FRONTEND_HOSTNAME,
 };
 
 // // JWT configuration (if needed for authentication)
@@ -34,7 +31,7 @@ const serverConfig = {
 
 // cors configuration
 const corsConfig = {
-    origin: FRONTEND_HOST,
+    origin: REACT_APP_FRONTEND_HOST,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 };

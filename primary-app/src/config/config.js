@@ -59,7 +59,15 @@ const googleMapsConfig = {
     }  
 };
 
-export { apiConfig, portConfig, googleMapsConfig };
+const dbConfig = {
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT,
+};
+
+export { apiConfig, portConfig, googleMapsConfig, dbConfig };
 // Note:
 // - The `defaultLocation` and `defaultZoom` can be adjusted based on your application's needs.
 // - The `mapStyles` can be customized to use different map styles as needed.
