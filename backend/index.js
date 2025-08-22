@@ -1,13 +1,17 @@
+import dotenv from 'dotenv'; 
+dotenv.config();
 import express from 'express';
-import mysql from 'mysql';
+import mysql from 'mysql2';
 import cors from 'cors';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { dbConfig } from './config.js'; // Import database configuration
+import { dbConfig } from './config/config.js'; // Import database configuration
 import rateLimit from 'express-rate-limit';
 
 const app = express();
 
+// console.log('credentials loaded in from .env file:', process.env.DB_USER, process.env.DB_CONNECTION_PASSWORD, process.env.DB_NAME, process.env.DB_PORT);
+// console.log('Database configuration:', dbConfig);
 const dbconn = mysql.createConnection(dbConfig);
 
 // Connect to the MySQL database
@@ -47,54 +51,92 @@ app.get('/', (req, res) => {
 	res.json('hello from the express backend!');
 });
 
-app.get('/userprofiletable', getUserProfileLimiter, (req, res) => {
-	const q = 'SELECT * FROM userprofiletable';
+app.get('/userprofile', getUserProfileLimiter, (req, res) => {
+	const q = 'SELECT * FROM profiledata.userprofile';
 	dbconn.query(q, (err, data) => {
 		if (err) return res.json({ error: err.message }); // Handle error and send response
 		return res.json(data);
 	});
 });
 
-app.post('/userprofiletable', createUserLimiter, async (req, res) => {
-	const { id, name, password } = req.body;
+app.post('/userprofile', createUserLimiter, async (req, res) => {
+	const { name, password } = req.body;
+
+	// Validate input
+	const usernameRegex = /^[a-zA-Z0-9_]{3,30}$/;
+	if (!name || !usernameRegex.test(name)) {
+		return res.status(400).json({ error: 'Invalid username format.' });
+	}
+	if (!password || password.length < 6) {
+		return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+	}
+
 	try {
 		// Hash the password before storing
 		const saltRounds = 10;
 		const hashedPassword = await bcrypt.hash(password, saltRounds);
-		const q = "INSERT INTO userprofiletable (idusers, username, userpassword) VALUES (?, ?, ?)";
-		dbconn.query(q, [id, name, hashedPassword], (err, data) => {
-			if (err) return res.json({ error: err.message });
-			return res.json({ message: 'User profile created successfully!', data });
+
+		// Get the current max idusers
+		const getMaxIdQuery = "SELECT MAX(idusers) AS maxId FROM profiledata.userprofile";
+		dbconn.query(getMaxIdQuery, (err, result) => {
+			if (err) return res.status(500).json({ error: err.message });
+
+			const newId = (result[0].maxId || 0) + 1;
+
+			const insertQuery = "INSERT INTO profiledata.userprofile (idusers, username, userpassword) VALUES (?, ?, ?)";
+			dbconn.query(insertQuery, [newId, name, hashedPassword], (err, data) => {
+				if (err) return res.status(500).json({ error: err.message });
+				return res.json({ message: 'User profile created successfully!', id: newId });
+			});
 		});
 	} catch (err) {
 		return res.status(500).json({ error: 'Error hashing password' });
 	}
 });
 
-app.post('/login', loginLimiter, (req, res) => {
-	const { username, password } = req.body;
-	const q = 'SELECT * FROM userprofiletable WHERE username = ?';
-	dbconn.query(q, [username], async (err, data) => {
-		if (err) return res.json({ error: err.message });
-		if (data.length === 0) {
-			return res.status(401).json({ message: 'Invalid username or password' });
-		}
-		const user = data[0];
-		try {
-			const match = await bcrypt.compare(password, user.userpassword);
-			if (match) {
-				// Generate JWT token
-				const payload = { id: user.idusers, username: user.username };
-				const secret = process.env.JWT_SECRET || 'your_jwt_secret';
-				const token = jwt.sign(payload, secret, { expiresIn: '1h' });
-				return res.json({ message: 'Login successful!', user, token });
-			} else {
-				return res.status(401).json({ message: 'Invalid username or password' });
+// Extracted authentication logic for maintainability
+async function authenticateUser(username, password) {
+	return new Promise((resolve, reject) => {
+		const q = 'SELECT * FROM profiledata.userprofile WHERE username = ?';
+		dbconn.query(q, [username], async (err, data) => {
+			if (err) return reject({ status: 500, error: err.message });
+			if (data.length === 0) {
+				return reject({ status: 401, error: 'Invalid username or password' });
 			}
-		} catch (err) {
-			return res.status(500).json({ error: 'Error comparing passwords' });
-		}
+			const user = data[0];
+			try {
+				const match = await bcrypt.compare(password, user.userpassword);
+				if (match) {
+					const payload = { id: user.idusers, username: user.username };
+					const secret = process.env.JWT_SECRET || 'your_jwt_secret';
+					const token = jwt.sign(payload, secret, { expiresIn: '1h' });
+					const safeUser = { id: user.idusers, username: user.username };
+					return resolve({ user: safeUser, token });
+				} else {
+					return reject({ status: 401, error: 'Invalid username or password' });
+				}
+			} catch (err) {
+				return reject({ status: 500, error: 'Error comparing passwords' });
+			}
+		});
 	});
+}
+
+app.post('/login', loginLimiter, async (req, res) => {
+	const { username, password } = req.body;
+
+	// Explicit username validation: only allow alphanumeric and underscores, 3-30 chars
+	const usernameRegex = /^[a-zA-Z0-9_]{3,30}$/;
+	if (!username || !usernameRegex.test(username)) {
+		return res.status(400).json({ error: 'Invalid username format.' });
+	}
+
+	try {
+		const { user, token } = await authenticateUser(username, password);
+		return res.json({ message: 'Login successful!', user, token });
+	} catch (err) {
+		return res.status(err.status || 500).json({ error: err.error || 'Authentication failed' });
+	}
 });
 
 app.listen(8800, () => {
