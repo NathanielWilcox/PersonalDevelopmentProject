@@ -7,24 +7,7 @@ import Cookies from 'js-cookie';
 // Use environment variable for API base URL; ensure REACT_APP_API_BASE_URL is set in your production environment
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
-// const handleLogin = (credentials) => async (dispatch, navigate) => {
-//     try {
-//         dispatch(loginStart());
-//         const response = await axios.post(`${API_BASE_URL}/login`, credentials);
-//         const { user, token } = response.data;
-        
-//         localStorage.setItem('token', token); // Store token in local storage
-//         dispatch(loginSuccess({ user, token }));
-//         Cookies.set('token', token, { expires: 7, secure: true });
-        
-//         // Navigate to home page after successful login
-//         navigate('/home', { state: { user } });
-//     } catch (error) {
-//         console.error('Login error:', error);
-//         dispatch(loginFailure(error.response?.data?.message || 'Login failed, please try again'));
-//     }
-// };
-
+// Function to handle user login
 const handleLogin = (userData, navigate) => async (dispatch) => { // Redux thunk pattern
     dispatch(loginStart());
     // Validate userData before making API call
