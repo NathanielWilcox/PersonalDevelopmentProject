@@ -47,10 +47,12 @@ const loginLimiter = rateLimit({
 	message: { error: 'Too many login attempts from this IP, please try again after 15 minutes.' }
 });
 
+// Test endpoint to verify server is running
 app.get('/', (req, res) => {
 	res.json('hello from the express backend!');
 });
 
+// Endpoint to fetch all user profiles
 app.get('/userprofile', getUserProfileLimiter, (req, res) => {
 	const q = 'SELECT * FROM profiledata.userprofile';
 	dbconn.query(q, (err, data) => {
@@ -59,7 +61,8 @@ app.get('/userprofile', getUserProfileLimiter, (req, res) => {
 	});
 });
 
-app.post('/userprofile', createUserLimiter, async (req, res) => {
+// Endpoint to create a new user profile
+app.post('/createnewuserprofile', createUserLimiter, async (req, res) => {
 	const { name, password } = req.body;
 
 	// Validate input
@@ -70,19 +73,15 @@ app.post('/userprofile', createUserLimiter, async (req, res) => {
 	if (!password || password.length < 6) {
 		return res.status(400).json({ error: 'Password must be at least 6 characters.' });
 	}
-
 	try {
 		// Hash the password before storing
 		const saltRounds = 10;
 		const hashedPassword = await bcrypt.hash(password, saltRounds);
-
 		// Get the current max idusers
 		const getMaxIdQuery = "SELECT MAX(idusers) AS maxId FROM profiledata.userprofile";
 		dbconn.query(getMaxIdQuery, (err, result) => {
 			if (err) return res.status(500).json({ error: err.message });
-
 			const newId = (result[0].maxId || 0) + 1;
-
 			const insertQuery = "INSERT INTO profiledata.userprofile (idusers, username, userpassword) VALUES (?, ?, ?)";
 			dbconn.query(insertQuery, [newId, name, hashedPassword], (err, data) => {
 				if (err) return res.status(500).json({ error: err.message });
@@ -96,14 +95,17 @@ app.post('/userprofile', createUserLimiter, async (req, res) => {
 
 // Extracted authentication logic for maintainability
 async function authenticateUser(username, password) {
+	// Return a promise to handle async operations
 	return new Promise((resolve, reject) => {
 		const q = 'SELECT * FROM profiledata.userprofile WHERE username = ?';
+		// Use parameterized query to prevent SQL injection
 		dbconn.query(q, [username], async (err, data) => {
 			if (err) return reject({ status: 500, error: err.message });
 			if (data.length === 0) {
 				return reject({ status: 401, error: 'Invalid username or password' });
 			}
 			const user = data[0];
+			// Compare hashed passwords
 			try {
 				const match = await bcrypt.compare(password, user.userpassword);
 				if (match) {
@@ -122,6 +124,7 @@ async function authenticateUser(username, password) {
 	});
 }
 
+// Endpoint to authenticate a user
 app.post('/login', loginLimiter, async (req, res) => {
 	const { username, password } = req.body;
 
@@ -130,7 +133,11 @@ app.post('/login', loginLimiter, async (req, res) => {
 	if (!username || !usernameRegex.test(username)) {
 		return res.status(400).json({ error: 'Invalid username format.' });
 	}
-
+	// Password presence check
+	if (!password) {
+		return res.status(400).json({ error: 'Password is required.' });
+	}
+	// Authenticate user
 	try {
 		const { user, token } = await authenticateUser(username, password);
 		return res.json({ message: 'Login successful!', user, token });
@@ -139,6 +146,29 @@ app.post('/login', loginLimiter, async (req, res) => {
 	}
 });
 
+// Endpoint to update user profile
+app.put('/userprofile/:id', (req, res) => {
+	// Update user profile by ID
+	const userId = req.params.id;
+	const { name, password } = req.body;
+	const q = 'UPDATE profiledata.userprofile SET username = ?, userpassword = ? WHERE idusers = ?';
+	dbconn.query(q, [name, password, userId], (err, data) => {
+		if (err) return res.status(500).json({ error: err.message });
+		return res.json({ message: 'User profile updated successfully!' });
+	});
+});
+
+// Endpoint to delete user profile
+app.delete('/userprofile/:id', (req, res) => {
+	const userId = req.params.id;
+	const q = 'DELETE FROM profiledata.userprofile WHERE idusers = ?';
+	dbconn.query(q, [userId], (err, data) => {
+		if (err) return res.status(500).json({ error: err.message });
+		return res.json({ message: 'User profile deleted successfully!' });
+	});
+});
+
+// Start the server
 app.listen(8800, () => {
 	console.log(
 		'Welcome to the backend server!, running on http://localhost:8800.\nThis is the backend server for the React + Node.js + Express + MySQL example application.'
