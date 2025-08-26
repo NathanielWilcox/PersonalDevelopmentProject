@@ -1,5 +1,6 @@
 import dotenv from 'dotenv'; 
 dotenv.config();
+
 import express from 'express';
 import mysql from 'mysql2';
 import cors from 'cors';
@@ -62,7 +63,7 @@ app.get('/userprofile', getUserProfileLimiter, (req, res) => {
 });
 
 // Endpoint to create a new user profile
-app.post('/createnewuserprofile', createUserLimiter, async (req, res) => {
+app.post('/createuser', createUserLimiter, async (req, res) => {
 	const { name, password } = req.body;
 
 	// Validate input
@@ -73,23 +74,50 @@ app.post('/createnewuserprofile', createUserLimiter, async (req, res) => {
 	if (!password || password.length < 6) {
 		return res.status(400).json({ error: 'Password must be at least 6 characters.' });
 	}
+
 	try {
 		// Hash the password before storing
 		const saltRounds = 10;
 		const hashedPassword = await bcrypt.hash(password, saltRounds);
-		// Get the current max idusers
+
+		// Get max idusers
 		const getMaxIdQuery = "SELECT MAX(idusers) AS maxId FROM profiledata.userprofile";
 		dbconn.query(getMaxIdQuery, (err, result) => {
-			if (err) return res.status(500).json({ error: err.message });
-			const newId = (result[0].maxId || 0) + 1;
-			const insertQuery = "INSERT INTO profiledata.userprofile (idusers, username, userpassword) VALUES (?, ?, ?)";
-			dbconn.query(insertQuery, [newId, name, hashedPassword], (err, data) => {
-				if (err) return res.status(500).json({ error: err.message });
-				return res.json({ message: 'User profile created successfully!', id: newId });
+			if (err) {
+				console.error('Error fetching max ID:', err);
+				return res.status(500).json({ error: 'Database error while retrieving user ID.' });
+			}
+
+			const newId = (result[0]?.maxId || 0) + 1;
+
+			// Normalize username to prevent duplicates with different cases or leading/trailing spaces
+			const normalizedUsername = name.trim().toLowerCase();
+
+			const payload = { id: user.idusers, username: user.normalizedUsername, role: user.role };
+
+			const insertQuery = `
+				INSERT INTO profiledata.userprofile (username, userpassword, role)
+				VALUES (?, ?, 'user')
+			`;
+
+			dbconn.query(insertQuery, [newId, name, hashedPassword, null], (err, data) => {
+				if (err) {
+					console.error('Error inserting user:', err);
+					if (err.code === 'ER_DUP_ENTRY') {
+						return res.status(409).json({ error: 'Username already exists.' });
+					}
+					return res.status(500).json({ error: 'Database error during user creation.' });
+				}
+
+				return res.status(201).json({
+					message: 'User profile created successfully!',
+					id: newId
+				});
 			});
 		});
 	} catch (err) {
-		return res.status(500).json({ error: 'Error hashing password' });
+		console.error('Hashing error:', err);
+		return res.status(500).json({ error: 'Error hashing password.' });
 	}
 });
 
@@ -109,7 +137,7 @@ async function authenticateUser(username, password) {
 			try {
 				const match = await bcrypt.compare(password, user.userpassword);
 				if (match) {
-					const payload = { id: user.idusers, username: user.username };
+					const payload = { id: user.idusers, username: user.username, role: user.role };
 					const secret = process.env.JWT_SECRET || 'your_jwt_secret';
 					const token = jwt.sign(payload, secret, { expiresIn: '1h' });
 					const safeUser = { id: user.idusers, username: user.username };
