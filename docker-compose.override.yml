@@ -1,0 +1,12 @@
+services:
+  backend:
+    volumes:
+      - ./backend/server:/usr/src/app
+      - /usr/src/app/node_modules  # Prevent overwriting node_modules in container
+    command: sh -c "npm install && npx nodemon index.js"
+
+  frontend:
+    volumes:
+      - ./primary-app/client:/usr/src/app
+      - /usr/src/app/node_modules
+    command: sh -c "npm install && npm start"

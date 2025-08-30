@@ -54,7 +54,7 @@ app.get('/', (req, res) => {
 });
 
 // Endpoint to fetch all user profiles
-app.get('/userprofile', getUserProfileLimiter, (req, res) => {
+app.get('/api/userprofile', getUserProfileLimiter, (req, res) => {
 	const q = 'SELECT * FROM profiledata.userprofile';
 	dbconn.query(q, (err, data) => {
 		if (err) return res.json({ error: err.message }); // Handle error and send response
@@ -63,7 +63,7 @@ app.get('/userprofile', getUserProfileLimiter, (req, res) => {
 });
 
 // Endpoint to create a new user profile
-app.post('/createuser', createUserLimiter, async (req, res) => {
+app.post('/api/createuser', createUserLimiter, async (req, res) => {
 	const { name, password } = req.body;
 
 	// Validate input
@@ -120,6 +120,11 @@ app.post('/createuser', createUserLimiter, async (req, res) => {
 		return res.status(500).json({ error: 'Error hashing password.' });
 	}
 });
+//what may be going wrong with above createuser method:
+// - Potential SQL injection if inputs are not sanitized (though parameterized queries help mitigate this).
+// - No check for existing usernames before insertion, which could lead to duplicate entries.
+// - Lack of detailed error handling for database operations.
+
 
 // Extracted authentication logic for maintainability
 async function authenticateUser(username, password) {

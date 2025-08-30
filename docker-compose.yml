@@ -1,0 +1,62 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: unless-stopped
+    ports:
+      - "3006:3306"  # Host port 3006 → Container port 3306
+    environment:
+      MYSQL_ROOT_PASSWORD: rootdev04061997!
+      MYSQL_DATABASE: profiledata
+      MYSQL_USER: root
+      MYSQL_PASSWORD: rootdev
+
+      # Custom DB config for backend use
+      DB_PORT: 3006
+      DB_HOST: 127.0.0.1
+      DB_NAME: profiledata
+      DB_USER: root
+      DB_PASSWORD: rootdev
+      DB_CONNECTION_PASSWORD: rootdev04061997!
+      DB_USER_TABLE: userprofile
+      DB_CONNECTION_STRING: mysql://root:rootdev04061997!@mysql:3306/profiledata
+      DB_POOL_HOST: mysql
+      DB_POOL_USER: root
+      DB_POOL_PASSWORD: rootdev04061997!
+      DB_POOL_DATABASE: profiledata
+      DB_POOL_PORT: 3306
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  backend:
+    build:
+      context: ./backend           # Dockerfile lives here
+      dockerfile: ./server/Dockerfile
+    container_name: backend
+    ports:
+      - "8800:8800"
+    env_file:
+      - ./backend/.env            # Loads backend-specific env vars
+    depends_on:
+      - mysql
+    volumes:
+      - ./backend/server:/usr/src/app  # Mounts actual backend code
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./primary-app          # Dockerfile lives here
+      dockerfile: ./client/Dockerfile
+    container_name: primary-app
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./primary-app/.env        # Loads frontend-specific env vars
+    depends_on:
+      - backend
+    volumes:
+      - ./primary-app:/usr/src/app  # Mounts actual frontend code
+    restart: unless-stopped
+
+volumes:
+  mysql-data:
