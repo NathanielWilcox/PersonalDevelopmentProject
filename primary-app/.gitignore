@@ -1,30 +1,42 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# optional overrides
+# See https://docs.docker.com/compose/reference/override/
+# Use this file to override settings in docker-compose.yml
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
+# THESE ARE ALL EXAMPLES, take only what you need and modify as necessary, no need to use everything
+# Example: change the backend port to 5001
+# services:
+#   backend:
+#     ports:
+#       - "5001:5000"
+#     environment:
+#       - FLASK_ENV=development
+#       - FLASK_DEBUG=1
+#       - OTHER_ENV_VAR=some_value
+#       - ANOTHER_ENV_VAR=another_value
+#     volumes:
+#       - ./backend:/app  # Mount the backend code for live updates
+#       - ./shared:/shared  # Mount the shared code for live updates
+#   frontend:
+#     ports:
+#       - "3001:3000"   # Change frontend port to 3001
+#     environment:
+#       - REACT_APP_API_URL=http://localhost:5001  # Point to the updated backend port
+#     volumes:
+#       - ./frontend:/app  # Mount the frontend code for live updates
+#       - ./shared:/shared  # Mount the shared code for live updates
+#   database:
+#     ports:
+#       - "5433:5432"   # Change database port to 5433
+#     environment:
+#       - POSTGRES_USER=your_username
+#       - POSTGRES_PASSWORD=your_password
+#       - POSTGRES_DB=your_database
+#     volumes:
+#       - db_data:/var/lib/postgresql/data  # Persist database data
+# volumes:
+#   db_data:
+#     driver: local # Use local driver for volume
+# networks:
+#   default:
+#     driver: bridge # Use bridge network
 
-# testing
-/coverage
-
-# production
-/build
-
-# misc
-.DS_Store
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-package-lock.json
-yarn.lock
-
-.env
-.dockerignore
-Dockerfile
