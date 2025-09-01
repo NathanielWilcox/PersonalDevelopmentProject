@@ -10,6 +10,12 @@ import { dbConfig } from './config/config.js'; // Import database configuration
 import rateLimit from 'express-rate-limit';
 
 const app = express();
+// CRUD operations for user profiles(Create, Read, Update, Delete)
+// Secure password storage with bcrypt
+// User authentication with JWT
+// Environment variables for sensitive data
+// Input validation and sanitization
+// Error handling and logging
 
 // console.log('credentials loaded in from .env file:', process.env.DB_USER, process.env.DB_CONNECTION_PASSWORD, process.env.DB_NAME, process.env.DB_PORT);
 // console.log('Database configuration:', dbConfig);
@@ -62,70 +68,13 @@ app.get('/api/userprofile', getUserProfileLimiter, (req, res) => {
 	});
 });
 
-// Endpoint to create a new user profile
+// TODO: remake create user endpoint with hashed passwords and validation
+// Endpoint to create a new user profile (Create)
 app.post('/api/createuser', createUserLimiter, async (req, res) => {
-	const { name, password } = req.body;
-
-	// Validate input
-	const usernameRegex = /^[a-zA-Z0-9_]{3,30}$/;
-	if (!name || !usernameRegex.test(name)) {
-		return res.status(400).json({ error: 'Invalid username format.' });
-	}
-	if (!password || password.length < 6) {
-		return res.status(400).json({ error: 'Password must be at least 6 characters.' });
-	}
-
-	try {
-		// Hash the password before storing
-		const saltRounds = 10;
-		const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-		// Get max idusers
-		const getMaxIdQuery = "SELECT MAX(idusers) AS maxId FROM profiledata.userprofile";
-		dbconn.query(getMaxIdQuery, (err, result) => {
-			if (err) {
-				console.error('Error fetching max ID:', err);
-				return res.status(500).json({ error: 'Database error while retrieving user ID.' });
-			}
-
-			const newId = (result[0]?.maxId || 0) + 1;
-
-			// Normalize username to prevent duplicates with different cases or leading/trailing spaces
-			const normalizedUsername = name.trim().toLowerCase();
-
-			const payload = { id: user.idusers, username: user.normalizedUsername, role: user.role };
-
-			const insertQuery = `
-				INSERT INTO profiledata.userprofile (username, userpassword, role)
-				VALUES (?, ?, 'user')
-			`;
-
-			dbconn.query(insertQuery, [newId, name, hashedPassword, null], (err, data) => {
-				if (err) {
-					console.error('Error inserting user:', err);
-					if (err.code === 'ER_DUP_ENTRY') {
-						return res.status(409).json({ error: 'Username already exists.' });
-					}
-					return res.status(500).json({ error: 'Database error during user creation.' });
-				}
-
-				return res.status(201).json({
-					message: 'User profile created successfully!',
-					id: newId
-				});
-			});
-		});
-	} catch (err) {
-		console.error('Hashing error:', err);
-		return res.status(500).json({ error: 'Error hashing password.' });
-	}
+	//method to create a new user profile
 });
-//what may be going wrong with above createuser method:
-// - Potential SQL injection if inputs are not sanitized (though parameterized queries help mitigate this).
-// - No check for existing usernames before insertion, which could lead to duplicate entries.
-// - Lack of detailed error handling for database operations.
 
-
+//This authentication function asynchronously verifies user credentials, compares hashed passwords, and generates a JWT for session management. It is called in the login endpoint to handle user authentication securely.
 // Extracted authentication logic for maintainability
 async function authenticateUser(username, password) {
 	// Return a promise to handle async operations
@@ -157,7 +106,9 @@ async function authenticateUser(username, password) {
 	});
 }
 
-// Endpoint to authenticate a user
+//TODO: Login endpoint should: validate input, check user existence w/ database table, compare hashed passwords w/ db, generate JWT, handle errors and update global state of app to logged in user and load user profile data
+// Authentication is handled asynchronously with proper error handling via the authenticateUser function
+// Endpoint login user (Read)
 app.post('/login', loginLimiter, async (req, res) => {
 	const { username, password } = req.body;
 
@@ -179,7 +130,7 @@ app.post('/login', loginLimiter, async (req, res) => {
 	}
 });
 
-// Endpoint to update user profile
+// Endpoint to update user profile (Update)
 app.put('/userprofile/:id', (req, res) => {
 	// Update user profile by ID
 	const userId = req.params.id;
@@ -191,7 +142,7 @@ app.put('/userprofile/:id', (req, res) => {
 	});
 });
 
-// Endpoint to delete user profile
+// Endpoint to delete user profile (Delete)
 app.delete('/userprofile/:id', (req, res) => {
 	const userId = req.params.id;
 	const q = 'DELETE FROM profiledata.userprofile WHERE idusers = ?';
