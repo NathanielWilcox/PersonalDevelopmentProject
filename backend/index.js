@@ -61,8 +61,8 @@ app.get('/', (req, res) => {
 
 // Endpoint to fetch all user profiles
 app.get('/api/userprofile', getUserProfileLimiter, (req, res) => {
-	const q = 'SELECT * FROM profiledata.userprofile';
-	dbconn.query(q, (err, data) => {
+	const getProfileQuery = 'SELECT * FROM profiledata.userprofile';
+	dbconn.query(getProfileQuery, (err, data) => {
 		if (err) return res.json({ error: err.message }); // Handle error and send response
 		return res.json(data);
 	});
@@ -71,7 +71,49 @@ app.get('/api/userprofile', getUserProfileLimiter, (req, res) => {
 // TODO: remake create user endpoint with hashed passwords and validation
 // Endpoint to create a new user profile (Create)
 app.post('/api/createuser', createUserLimiter, async (req, res) => {
-	//method to create a new user profile
+	// method to create a new user profile using Node.js, Express, bcrypt, and MySQL
+	// user profile will contain 
+	// [varchar(45) username, 
+	// varchar(255) password(hashed){note: user will enter plain text, so authentication must hash the plaintext and compare hashes}, 
+	// nullable varchar(45) email, 
+	// enum role{default 'user','photographer','videographer','musician','technician','admin'}
+	// timestamp created,
+	// ]
+	const { username, password, email } = req.body;
+
+	// Basic input validation
+	if (!username || !password) {
+		return res.status(400).json({ error: 'Username and password are required.' });
+	}
+	// Validate username: only allow alphanumeric and underscores, 3-30 chars
+	const usernameRegex = /^[a-zA-Z0-9_]{3,30}$/;
+	if (!usernameRegex.test(username)) {
+		return res.status(400).json({ error: 'Invalid username format. Only alphanumeric characters and underscores are allowed, 3-30 characters long.' });
+	}
+	// Validate password: minimum 2 characters for testing, should be 6+ in production
+	if (password.length < 2) {
+		return res.status(400).json({ error: 'Password must be at least 6 characters long.' });
+	}
+	// Hash the password before storing it
+	try {
+		const hashedPassword = await bcrypt.hash(password, 10);
+		const userRole = role && ['photographer','videographer','musician','technician','admin','user'].includes(role) ? role : 'user'; // Default role is 'user'
+
+		// Use parameterized query to prevent SQL injection
+		const insertQuery = 'INSERT INTO profiledata.userprofile (username, userpassword, email, role) VALUES (?, ?, ?, ?)';
+		const values = [username, hashedPassword, email || null, userRole];
+		// async/await with try/catch for better error handling, create a new user profile in the database
+		await new Promise((resolve, reject) => {
+			dbconn.query(insertQuery, values, (err, result) => {
+				if (err) return reject(err);
+				resolve(result);
+			});
+		});
+		return res.status(201).json({ message: 'User profile created successfully!' });
+	} catch (err) {
+		console.error('Error creating user profile:', err);
+		return res.status(500).json({ error: 'Internal server error' });
+	}
 });
 
 //This authentication function asynchronously verifies user credentials, compares hashed passwords, and generates a JWT for session management. It is called in the login endpoint to handle user authentication securely.
@@ -79,64 +121,62 @@ app.post('/api/createuser', createUserLimiter, async (req, res) => {
 async function authenticateUser(username, password) {
 	// Return a promise to handle async operations
 	return new Promise((resolve, reject) => {
-		const q = 'SELECT * FROM profiledata.userprofile WHERE username = ?';
+		const authenticateQuery = 'SELECT * FROM profiledata.userprofile WHERE username = ?';
 		// Use parameterized query to prevent SQL injection
-		dbconn.query(q, [username], async (err, data) => {
-			if (err) return reject({ status: 500, error: err.message });
-			if (data.length === 0) {
-				return reject({ status: 401, error: 'Invalid username or password' });
-			}
-			const user = data[0];
+		dbconn.query(authenticateQuery, [username], async (err, results) => {
+			if (err) return reject({ status: 500, error: 'Database query error' });
+			if (results.length === 0) return reject({ status: 401, error: 'Invalid username or password' });
+			const user = results[0];
 			// Compare hashed passwords
-			try {
-				const match = await bcrypt.compare(password, user.userpassword);
-				if (match) {
-					const payload = { id: user.idusers, username: user.username, role: user.role };
-					const secret = process.env.JWT_SECRET || 'your_jwt_secret';
-					const token = jwt.sign(payload, secret, { expiresIn: '1h' });
-					const safeUser = { id: user.idusers, username: user.username };
-					return resolve({ user: safeUser, token });
-				} else {
-					return reject({ status: 401, error: 'Invalid username or password' });
-				}
-			} catch (err) {
-				return reject({ status: 500, error: 'Error comparing passwords' });
-			}
+			const isPasswordValid = await bcrypt.compare(password, user.userpassword);
+			if (!isPasswordValid) return reject({ status: 401, error: 'Invalid username or password' });
+			// Generate JWT
+			const token = jwt.sign({ id: user.idusers, username: user.username, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
+			// Return user info and token
+			resolve({ id: user.idusers, username: user.username, email: user.email, role: user.role, token });
 		});
-	});
+	},
+); // Note: In a production environment, ensure to handle JWT secret securely and consider token expiration and refresh mechanisms.
 }
 
-//TODO: Login endpoint should: validate input, check user existence w/ database table, compare hashed passwords w/ db, generate JWT, handle errors and update global state of app to logged in user and load user profile data
-// Authentication is handled asynchronously with proper error handling via the authenticateUser function
-// Endpoint login user (Read)
-app.post('/login', loginLimiter, async (req, res) => {
-	const { username, password } = req.body;
+// Middleware to authenticate JWT tokens for protected routes
+function authenticateJWT(req, res, next) {
+	const authHeader = req.headers.authorization;
 
-	// Explicit username validation: only allow alphanumeric and underscores, 3-30 chars
-	const usernameRegex = /^[a-zA-Z0-9_]{3,30}$/;
-	if (!username || !usernameRegex.test(username)) {
-		return res.status(400).json({ error: 'Invalid username format.' });
+// Example protected route
+app.get('/profile', authenticateJWT, (req, res) => {
+  res.json({ message: `Welcome user ${req.user.id}` });
+});
+
+//TODO: Login endpoint should: validate input, check user existence w/ database table, compare hashed passwords w/ db, generate JWT, handle errors and update global state of app to logged in user and load user profile data
+// Verify user credentials async using authenticateUser method and issue JWT (Login), with rate limiting to prevent brute-force attacks
+app.post('/login', loginLimiter, async (req, res) => {
+	// method to authenticate a user using Node.js, Express, bcrypt, JWT, and MySQL
+	const { username, password } = req.body;
+	if (!username || !password) {
+		return res.status(400).json({ error: 'Username and password are required.' });
 	}
-	// Password presence check
-	if (!password) {
-		return res.status(400).json({ error: 'Password is required.' });
-	}
-	// Authenticate user
 	try {
-		const { user, token } = await authenticateUser(username, password);
-		return res.json({ message: 'Login successful!', user, token });
+		const result = await authenticateUser(username, password);
+		return res.json(result); // Return user info and token
 	} catch (err) {
-		return res.status(err.status || 500).json({ error: err.error || 'Authentication failed' });
+		return res.status(err.status || 500).json({ error: err.error || 'Internal server error' });
 	}
 });
 
 // Endpoint to update user profile (Update)
 app.put('/userprofile/:id', (req, res) => {
-	// Update user profile by ID
+	// Update user profile table(email, role) located by id 
 	const userId = req.params.id;
-	const { name, password } = req.body;
-	const q = 'UPDATE profiledata.userprofile SET username = ?, userpassword = ? WHERE idusers = ?';
-	dbconn.query(q, [name, password, userId], (err, data) => {
+	const { username, email, role } = req.body;
+	// table columns:[varchar(45) username, 
+	// varchar(255) password(hashed){note: user will enter plain text, so authentication must hash the plaintext and compare hashes}, 
+	// nullable varchar(45) email, 
+	// enum role{default 'user','photographer','videographer','musician','technician','admin'}
+	// timestamp created]
+	const updateQuery = 'UPDATE profiledata.userprofile SET username = ?, email = ?, role = ? WHERE idusers = ?';
+	const values = [username, email, role, userId];
+	dbconn.query(updateQuery, values, (err, data) => {
 		if (err) return res.status(500).json({ error: err.message });
 		return res.json({ message: 'User profile updated successfully!' });
 	});
@@ -145,8 +185,8 @@ app.put('/userprofile/:id', (req, res) => {
 // Endpoint to delete user profile (Delete)
 app.delete('/userprofile/:id', (req, res) => {
 	const userId = req.params.id;
-	const q = 'DELETE FROM profiledata.userprofile WHERE idusers = ?';
-	dbconn.query(q, [userId], (err, data) => {
+	const deleteQuery = 'DELETE FROM profiledata.userprofile WHERE idusers = ?';
+	dbconn.query(deleteQuery, [userId], (err, data) => {
 		if (err) return res.status(500).json({ error: err.message });
 		return res.json({ message: 'User profile deleted successfully!' });
 	});
