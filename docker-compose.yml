@@ -8,10 +8,9 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: rootdev04061997!
       MYSQL_DATABASE: profiledata
-      MYSQL_USER: root
-      MYSQL_PASSWORD: rootdev
+      MYSQL_ALLOW_EMPTY_PASSWORD: "no"
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootdev04061997!"]
       interval: 10s
       timeout: 5s
       retries: 10
