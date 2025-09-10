@@ -192,18 +192,19 @@ app.delete('/userprofile/:id', (req, res) => {
 	}
 })();
 
-if (authHeader) {
-	const token = authHeader.split(' ')[1];
-	jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-		if (err) {
-			return res.status(403).json({ error: 'Invalid token' });
-		}
-		req.user = user;
-		next();
-	});
-} else {
-	res.status(401).json({ error: 'Authorization header missing' });
-}
+// TODO: fix JWT authentication middleware to protect routes
+// if (authHeader) {
+// 	const token = authHeader.split(' ')[1];
+// 	jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+// 		if (err) {
+// 			return res.status(403).json({ error: 'Invalid token' });
+// 		}
+// 		req.user = user;
+// 		next();
+// 	});
+// } else {
+// 	res.status(401).json({ error: 'Authorization header missing' });
+// }
 
 // Function to handle user logout
 const handleLogout = (dispatch, navigate) => {
