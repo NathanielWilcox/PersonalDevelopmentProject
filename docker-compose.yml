@@ -8,10 +8,14 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: rootdev04061997!
       MYSQL_DATABASE: profiledata
+      MYSQL_USER: root
+      MYSQL_PASSWORD: rootdev
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -p $${MYSQL_ROOT_PASSWORD} || exit 1"]
-      interval: 5s
-      retries: 5
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     volumes:
       - mysql-data:/var/lib/mysql
 
