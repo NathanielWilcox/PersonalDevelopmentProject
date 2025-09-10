@@ -215,6 +215,10 @@ app.listen(8800, () => {
 	// console.log('Database User: root');
 	// console.log('Database Port: 3006');
 });
+	if (navigate) {
+		navigate('/login');
+	}
+};
 // TODO: Implement error handling for database connection issues.
 // TODO: Implement logging for database queries and errors.
 // TODO: Implement a connection pool for better performance and resource management.
