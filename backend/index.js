@@ -79,7 +79,7 @@ app.post('/api/createuser', createUserLimiter, async (req, res) => {
 	// enum role{default 'user','photographer','videographer','musician','technician','admin'}
 	// timestamp created,
 	// ]
-	const { username, password, email } = req.body;
+	const { username, password, email, role } = req.body;
 
 	// Basic input validation
 	if (!username || !password) {
@@ -97,7 +97,7 @@ app.post('/api/createuser', createUserLimiter, async (req, res) => {
 	// Hash the password before storing it
 	try {
 		const hashedPassword = await bcrypt.hash(password, 10);
-		const userRole = role && ['photographer','videographer','musician','technician','admin','user'].includes(role) ? role : 'user'; // Default role is 'user'
+		const userRole = role && ['photographer','videographer','musician','technician','user'].includes(role) ? role : 'user'; // Default role is 'user'
 
 		// Use parameterized query to prevent SQL injection
 		const insertQuery = 'INSERT INTO profiledata.userprofile (username, userpassword, email, role) VALUES (?, ?, ?, ?)';
@@ -105,7 +105,17 @@ app.post('/api/createuser', createUserLimiter, async (req, res) => {
 		// async/await with try/catch for better error handling, create a new user profile in the database
 		await new Promise((resolve, reject) => {
 			dbconn.query(insertQuery, values, (err, result) => {
-				if (err) return reject(err);
+				if (err) {
+					console.error('Error inserting user profile:', err.code, err.message, { values });
+					// Handle specific SQL errors
+					if (err.code === 'ER_DUP_ENTRY') {
+						return reject({ status: 409, error: 'Username already exists.' });
+					}
+					if (err.code === 'ER_BAD_NULL_ERROR') {
+						return reject({ status: 400, error: 'Missing required fields' });
+					}
+					return reject({ status: 500, error: 'Database error' });
+				}
 				resolve(result);
 			});
 		});
@@ -197,28 +207,38 @@ app.listen(8800, () => {
 	console.log(
 		'Welcome to the backend server!, running on http://localhost:8800.\nThis is the backend server for the React + Node.js + Express + MySQL example application.'
 	);
-	console.log('Database connection established successfully!');
-	// Uncomment the following lines to display available endpoints and database connection details
-	// console.log('You can now access the API endpoints at http://localhost:8800/');
-	// console.log('Available endpoints:');
-	// console.log('- GET /: Returns a welcome message');
-	// console.log('- GET /userprofiletable: Fetch all user profiles');
-	// console.log('- POST /userprofiletable: Create a new user profile');
-	// console.log('- POST /login: Authenticate a user');
-	// console.log('frontend endpoints(http://localhost:3000):');
-	// console.log('- GET /home: Home page');
-	// console.log('- GET /login: Login page');
-	// console.log('- GET /map: Map page');
-	// console.log('- GET /profile: User profile page');
-	// console.log('SQL Server Connection Details:');
-	// console.log('Database Host: localhost');
-	// console.log('Database User: root');
-	// console.log('Database Port: 3006');
+	console.log('Database connection success! Press Ctrl+C to quit.');
+}, {
+	cors: { origin: 'http://localhost:3000', methods: ['GET','POST','PUT','DELETE'], allowedHeaders: ['Content-Type','Authorization'] }
 });
+	if (authHeader) {
+		const token = authHeader.split(' ')[1];
+		jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+			if (err) {
+				return res.status(403).json({ error: 'Forbidden' });
+			}
+			req.user = user;
+			next();
+		});
+	} else {
+		res.status(401).json({ error: 'Unauthorized' });
+	}
+}
+// Function to handle user logout
+const handleLogout = (dispatch, navigate) => {
+	// Clear user data and token from local storage and cookies
+	localStorage.removeItem('token');
+	Cookies.remove('token');
+	Cookies.remove('username');
+	// Dispatch logout action to update Redux state
+	dispatch(logout());
+	// Redirect to login page after logout
 	if (navigate) {
 		navigate('/login');
 	}
 };
+
+export { handleLogin, handleLogout };
 // TODO: Implement error handling for database connection issues.
 // TODO: Implement logging for database queries and errors.
 // TODO: Implement a connection pool for better performance and resource management.
