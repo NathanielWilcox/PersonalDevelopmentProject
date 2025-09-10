@@ -14,6 +14,8 @@ const Login = () => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
     const loginApiUrl = process.env.REACT_APP_LOGIN_API_URL;
+    const createProfileApiUrl = process.env.REACT_APP_CREATE_PROFILE_API_URL;
+    // const updateProfileApiUrl = process.env.REACT_APP_UPDATE_PROFILE_API_URL;
     // const userProfileApiUrl = process.env.REACT_APP_USER_PROFILE_BASE_API_URL;
 
     // Handle form submission for login
@@ -64,7 +66,9 @@ const Login = () => {
     const handleCreateProfile = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch(process.env.REACT_APP_USER_PROFILE_BASE_API_URL, {
+            const response = await fetch(
+                createProfileApiUrl, 
+                {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password, email, role })
