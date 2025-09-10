@@ -15,25 +15,29 @@ const handleLogin = (userData, navigate) => async (dispatch) => { // Redux thunk
         dispatch(loginFailure('Username and password are required'));
         return;
     }
-    // Make API call to login endpoint
     try {
         const response = await fetch(`${API_BASE_URL}/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(userData)
         });
+
         if (response.ok) {
             const data = await response.json();
-            dispatch(loginSuccess({ user: data.user, token: data.token }));
-            // Persist token in localStorage and cookies
+            const { id, username, email, role, token } = data;
+
             localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify({ id, username, email, role }));
+
             Cookies.set('token', data.token, { expires: 7, secure: true });
-            if (userData && userData.username) {
-                Cookies.set('username', userData.username, { expires: 7, secure: true });
-            }
+            Cookies.set('username', username, { expires: 7, secure: true });
+
+            // Dispatch success action with user data
+            dispatch(loginSuccess({ user: { id, username, email, role}, token: token }));
+            
             // Navigate to Home page after login
-            if (navigate && data.user) {
-                navigate('/home', { state: { user: data.user } });
+            if (navigate) {
+                navigate('/home', { state: { user: { id, username, email, role } } });
             }
         } else {
             const errorData = await response.json();

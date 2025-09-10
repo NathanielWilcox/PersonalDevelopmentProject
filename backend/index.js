@@ -115,8 +115,13 @@ app.post('/api/createuser', createUserLimiter, async (req, res) => {
 						return reject({ status: 400, error: 'Missing required fields' });
 					}
 					return reject({ status: 500, error: 'Database error' });
+				} else if (result.affectedRows === 0) {
+					res.status(500).json({ error: 'Failed to create user profile' });
+					return reject(new Error('No rows affected'));
+				} else {
+					console.log('User profile created with ID:', result.insertId);
+					resolve();
 				}
-				resolve(result);
 			});
 		});
 		return res.status(201).json({ message: 'User profile created successfully!' });

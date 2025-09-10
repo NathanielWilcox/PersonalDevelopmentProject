@@ -2,9 +2,10 @@ import React from 'react';
 import '../index.css';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { handleLogin, handleLogout } from '../utils/authActions'; // Only use handleLogout for logout logic, handleLogin is not used in NavBar(see Login component for login logic)
+import { handleLogout } from '../utils/authActions'; // Only use handleLogout for logout logic, handleLogin is not used in NavBar(see Login component for login logic)
 import Cookies from 'js-cookie';
 
+// TODO: Decide if login state should be managed here or handled globally via Redux, currently using Redux for global state management so
 const NavBar = ({ onLogout }) => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
@@ -32,8 +33,7 @@ const NavBar = ({ onLogout }) => {
     // };
     // console.log('Test User:', testUser); // Debugging log to check test user data
     
-    
-
+    // Set or remove cookies based on login state
     React.useEffect(() => {
         if (isLoggedIn && user) {
             // Set user data as cookies (e.g., username)
@@ -45,10 +45,9 @@ const NavBar = ({ onLogout }) => {
         }
     }, [isLoggedIn, user]);
 
+    // Handle login click - navigate to login page
     const handleLoginClick = () => {
-        // Dispatch login action and navigate to Login page
-        // This just sends the user to the login page, actual login logic is handled in Login component
-        navigate('/login', { state: { from: '/home' } }); // Redirect to login page
+        navigate('/login');
     };
     const handleLogoutClick = () => {
         // Only use handleLogout for logout logic

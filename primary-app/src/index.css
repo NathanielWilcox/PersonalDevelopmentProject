@@ -78,3 +78,52 @@ body {
 .place-picker-container {
   padding: 20px;
 }
+
+.tab-buttons {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.tab-buttons button {
+  padding: 0.5rem 1rem;
+  margin: 0 0.5rem;
+  border: none;
+  background-color: #eee;
+  cursor: pointer;
+}
+
+.tab-buttons button.active {
+  background-color: #333;
+  color: white;
+  font-weight: bold;
+}
+
+map.container {
+  height: 400px;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+form input,
+form button {
+  padding: 0.5rem;
+  font-size: 1rem;
+}
+form button {
+  background-color: #333;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+form button:hover {
+  background-color: #555;
+}
