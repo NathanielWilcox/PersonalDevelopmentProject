@@ -2,7 +2,6 @@ services:
   backend:
     volumes:
       - ./backend:/usr/src/app           # Mount the folder with package.json
-      - .backend/node_modules:/usr/src/app/node_modules        # Keep container's node_modules
     command: sh -c "npx nodemon index.js"
     environment:
       - NODE_ENV=development
