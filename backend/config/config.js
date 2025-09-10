@@ -3,9 +3,9 @@ dotenv.config();
 
 // Destructure environment variables
 const {
-    REACT_APP_BACKEND_PORT,
-    REACT_APP_FRONTEND_HOST,
-    REACT_APP_FRONTEND_HOSTNAME,
+    BACKEND_PORT,
+    FRONTEND_HOST,
+    FRONTEND_HOSTNAME,
 } = process.env;
 
 // Database configuration
@@ -19,8 +19,8 @@ const dbConfig = {
 
 // server port configuration
 const serverConfig = {
-    port: REACT_APP_BACKEND_PORT,
-    hostname: REACT_APP_FRONTEND_HOSTNAME,
+    port: BACKEND_PORT,
+    hostname: FRONTEND_HOSTNAME,
 };
 
 // // JWT configuration (if needed for authentication)
@@ -31,7 +31,7 @@ const serverConfig = {
 
 // cors configuration
 const corsConfig = {
-    origin: REACT_APP_FRONTEND_HOST,
+    origin: FRONTEND_HOST,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 };
