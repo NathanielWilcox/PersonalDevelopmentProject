@@ -70,7 +70,7 @@ app.get('/api/userprofile', getUserProfileLimiter, (req, res) => {
 
 // TODO: remake create user endpoint with hashed passwords and validation
 // Endpoint to create a new user profile (Create)
-app.post('/api/createuser', createUserLimiter, async (req, res) => {
+app.post('/api/create', createUserLimiter, async (req, res) => {
 	// method to create a new user profile using Node.js, Express, bcrypt, and MySQL
 	// user profile will contain 
 	// [varchar(45) username, 
