@@ -30,7 +30,8 @@ dbconn.connect((err) => {
 	console.log('Database connected successfully!');
 });
 
-app.use(cors());
+const cors = require('cors');
+app.use(cors({ origin: 'http://localhost:3000', methods: ['GET','POST','PUT','DELETE'], allowedHeaders: ['Content-Type','Authorization'] , credentials: true })); // Adjust origin as needed for production
 app.use(express.json());
 
 // Rate limiter for user profile creation endpoint
@@ -102,6 +103,9 @@ app.post('/api/create', createUserLimiter, async (req, res) => {
 		// Use parameterized query to prevent SQL injection
 		const insertQuery = 'INSERT INTO profiledata.userprofile (username, userpassword, email, role) VALUES (?, ?, ?, ?)';
 		const values = [username, hashedPassword, email || null, userRole];
+
+		console.log('Recieved POST /api/create with values:', values);
+		console.log('Request body:', req.body);
 		// async/await with try/catch for better error handling, create a new user profile in the database
 		await new Promise((resolve, reject) => {
 			dbconn.query(insertQuery, values, (err, result) => {
@@ -213,20 +217,19 @@ app.listen(8800, () => {
 		'Welcome to the backend server!, running on http://localhost:8800.\nThis is the backend server for the React + Node.js + Express + MySQL example application.'
 	);
 	console.log('Database connection success! Press Ctrl+C to quit.');
-}, {
-	cors: { origin: 'http://localhost:3000', methods: ['GET','POST','PUT','DELETE'], allowedHeaders: ['Content-Type','Authorization'] }
 });
+
 	if (authHeader) {
 		const token = authHeader.split(' ')[1];
 		jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
 			if (err) {
-				return res.status(403).json({ error: 'Forbidden' });
+				return res.status(403).json({ error: 'Invalid token' });
 			}
 			req.user = user;
 			next();
 		});
 	} else {
-		res.status(401).json({ error: 'Unauthorized' });
+		res.status(401).json({ error: 'Authorization header missing' });
 	}
 }
 // Function to handle user logout
