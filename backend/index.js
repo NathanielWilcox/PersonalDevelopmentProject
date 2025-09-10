@@ -21,13 +21,24 @@ app.use(cors({ origin: 'http://localhost:3000', methods: ['GET','POST','PUT','DE
 app.use(express.json());
 
 // Connect to the MySQL database
-dbconn.connect((err) => {
-	if (err) {
-		console.error('Database connection failed:', err);
-		return;
+async function connectToDatabase(retries = 5, delay = 2000) {
+	for (let attempt = 1; attempt <= retries; attempt++) {
+		try {
+			await dbconn.connect();
+			console.log('DB MySQL connected and ready');
+			return;
+		} catch (err) {
+			console.error(`DB connection attempt ${attempt} failed:`, err);
+			if (attempt < retries) {
+				console.log(`Retrying in ${delay / 1000} seconds...`);
+				await new Promise(res => setTimeout(res, delay));
+			}
+		}
 	}
-	console.log('Database connected successfully!');
-});
+	console.error('All DB connection attempts failed. Exiting.');
+	process.exit(1);
+}
+connectToDatabase();
 
 // Rate limiter for user profile creation endpoint
 const createUserLimiter = rateLimit({
