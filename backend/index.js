@@ -243,7 +243,7 @@ const handleLogout = (dispatch, navigate) => {
 	}
 };
 
-export { handleLogin, handleLogout };
+export { handleLogout };
 // TODO: Implement error handling for database connection issues.
 // TODO: Implement logging for database queries and errors.
 // TODO: Implement a connection pool for better performance and resource management.
