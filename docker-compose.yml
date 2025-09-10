@@ -10,24 +10,23 @@ services:
       MYSQL_DATABASE: profiledata
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -p $${MYSQL_ROOT_PASSWORD} || exit 1"]
-      interval: 10s
-      timeout: 5s
+      interval: 5s
       retries: 5
     volumes:
       - mysql-data:/var/lib/mysql
 
   backend:
+    depends_on:
+      mysql: # Ensure MySQL starts before backend
+        condition: service_healthy
     build:
       context: ./backend           # Dockerfile lives here
       dockerfile: Dockerfile
     container_name: backend
-    depends_on:
-      - mysql # Ensure MySQL starts before backend
     ports:
       - "8800:8800"
     env_file:
       - ./backend/.env            # Loads backend-specific env vars
-    
     volumes:
       - ./backend:/usr/src/app  # Mounts actual backend code
       - /usr/src/app/node_modules  # Prevent overwriting node_modules in container
