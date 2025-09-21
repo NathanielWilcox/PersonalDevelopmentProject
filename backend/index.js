@@ -5,7 +5,7 @@ import mysql from 'mysql2';
 import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { dbConfig, serverConfig, corsConfig } from './config/config.js'; // Import database configuration
+import { serverConfig } from './config/config.js'; // Import database configuration
 import rateLimit from 'express-rate-limit';
 
 // CRUD operations for user profiles(Create, Read, Update, Delete)

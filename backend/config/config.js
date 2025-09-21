@@ -1,7 +1,6 @@
 import dotenv from 'dotenv';
-import mysql from 'mysql2';
+import mysql from 'mysql2/promise';
 dotenv.config();
-
 
 // Destructure environment variables
 const {
@@ -10,26 +9,54 @@ const {
   FRONTEND_HOSTNAME,
   DB_HOST,
   DB_USER,
-  DB_CONNECTION_PASSWORD,
-  DB_NAME,
-  DB_PORT,
 } = process.env;
 
-console.log('DB config:', {
-  DB_HOST,
-  DB_USER,
-});
+async function waitForDb() {
+  let retries = 10;
+  while (retries) {
+    try {
+      console.log(`⏳ Checking MySQL... (${retries} retries left)`);
 
-const dbConfig = mysql.createPool({
-  host: DB_HOST,
-  user: DB_USER,
-  password: DB_CONNECTION_PASSWORD,
-  database: DB_NAME,
-  port: Number(DB_PORT),
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
+      const conn = await mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_CONNECTION_PASSWORD,
+        database: process.env.DB_NAME,
+        port: Number(process.env.DB_PORT)
+      });
+
+      await conn.query('SELECT 1'); // lightweight ping
+      await conn.end();
+
+      console.log('✅ MySQL is ready to accept connections');
+      return;
+    } catch (err) {
+      console.log(`❌ MySQL not ready: ${err.code || err.message}`);
+      retries -= 1;
+      await new Promise(res => setTimeout(res, 5000)); // wait 5s
+    }
+  }
+  throw new Error('❌ Could not connect to MySQL after multiple retries');
+}
+
+export async function initDbPool() {
+  await waitForDb();
+
+  // Create the pool only after DB is confirmed ready
+  return mysql.createPool({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_CONNECTION_PASSWORD,
+    database: process.env.DB_NAME,
+    port: Number(process.env.DB_PORT),
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
+  });
+}
+
+
+await waitForDb();
 
 
 // server port configuration
@@ -52,4 +79,4 @@ const corsConfig = {
 };
 
 
-export { dbConfig, serverConfig, corsConfig }; // Add JWT if uncommented
+export { serverConfig, corsConfig }; // Add JWT if uncommented
