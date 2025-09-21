@@ -4,17 +4,16 @@ services:
     container_name: mysql
     restart: unless-stopped
     ports:
-      - "3307:3306"  # Host port 3307 → Container port 3306
+      - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: rootdev04061997!
       MYSQL_DATABASE: profiledata
-      MYSQL_ALLOW_EMPTY_PASSWORD: "no"
+    command: --default-authentication-plugin=mysql_native_password
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootdev04061997!"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 10s
     volumes:
       - mysql-data:/var/lib/mysql
 

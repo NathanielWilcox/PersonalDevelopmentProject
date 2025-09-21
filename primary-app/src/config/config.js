@@ -1,7 +1,7 @@
 // frontend config file
 
 const apiConfig = {
-    apiBaseUrl: 'http://localhost:8800/api', // Base URL for API requests
+    apiBaseUrl: 'http://backend:8800', // Base URL for API requests
 }
 
 const portConfig = {
