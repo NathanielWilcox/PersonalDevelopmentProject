@@ -1,5 +1,7 @@
 import dotenv from 'dotenv';
+import mysql from 'mysql2';
 dotenv.config();
+
 
 // Destructure environment variables
 const {
@@ -9,13 +11,13 @@ const {
 } = process.env;
 
 // Database configuration
-const dbConfig = {
+const dbConfig = mysql.createConnection({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_CONNECTION_PASSWORD,
   database: process.env.DB_NAME,
   port: process.env.DB_PORT,
-};
+});
 
 // server port configuration
 const serverConfig = {

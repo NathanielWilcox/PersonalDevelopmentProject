@@ -7,7 +7,7 @@ const apiConfig = {
 const portConfig = {
     backendPort: 8800, // Port for the backend server}
     frontendPort: 3000, // Port for the frontend application
-    sqlServerPort: 3006, // Port for the SQL server
+    sqlServerPort: 3306, // Port for the SQL server
 };
 
 const googleMapsConfig = {

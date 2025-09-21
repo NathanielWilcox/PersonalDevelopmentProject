@@ -13,10 +13,6 @@ const Login = () => {
     const [activeForm, setActiveForm] = useState('login'); // 'login' or 'createProfile'
     const navigate = useNavigate();
     const dispatch = useDispatch();
-    const loginApiUrl = process.env.REACT_APP_LOGIN_API_URL;
-    const createProfileApiUrl = process.env.REACT_APP_CREATE_PROFILE_API_URL;
-    // const updateProfileApiUrl = process.env.REACT_APP_UPDATE_PROFILE_API_URL;
-    // const userProfileApiUrl = process.env.REACT_APP_USER_PROFILE_BASE_API_URL;
 
     // Handle form submission for login
     const handleSubmit = async (e) => {
@@ -28,7 +24,7 @@ const Login = () => {
                 return;
             }
             const response = await fetch(
-                loginApiUrl,
+                process.env.REACT_APP_LOGIN_API_URL,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -44,7 +40,7 @@ const Login = () => {
                 handleLogin(dispatch, { username, password }, navigate);
                 dispatch({ type: 'LOGIN_SUCCESS' });
                 await fetch(
-                    loginApiUrl,
+                    process.env.REACT_APP_LOGIN_API_URL,
                     {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -67,7 +63,7 @@ const Login = () => {
         e.preventDefault();
         try {
             const response = await fetch(
-                createProfileApiUrl, 
+                process.env.REACT_APP_CREATE_PROFILE_API_URL, 
                 {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
