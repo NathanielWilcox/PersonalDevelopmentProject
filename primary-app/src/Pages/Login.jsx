@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import '../index.css';
 import { handleLogin } from '../utils/authActions';
+import { handleApiResponse, withErrorHandling } from '../utils/errorHandling';
 
 const Login = () => {
     const [username, setUsername] = useState('');
@@ -15,79 +16,53 @@ const Login = () => {
     const dispatch = useDispatch();
 
     // Handle form submission for login
-    const handleSubmit = async (e) => {
+    const handleSubmit = withErrorHandling(async (e) => {
         e.preventDefault();
-        try {
-            if (!username || !password) {
-                setPopupMessage('Username and password are required');
-                setTimeout(() => setPopupMessage(''), 3000);
-                return;
-            }
-            const response = await fetch(
-                process.env.REACT_APP_LOGIN_API_URL,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                }
-            );
-            if (response.ok) {
-                setPopupMessage('Login successful');
-                setTimeout(() => {
-                    setPopupMessage('');
-                    navigate('/home');
-                }, 1000);
-                handleLogin(dispatch, { username, password }, navigate);
-                dispatch({ type: 'LOGIN_SUCCESS' });
-                await fetch(
-                    process.env.REACT_APP_LOGIN_API_URL,
-                    {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ username, password })
-                }
-            );
-            } else if (response.status === 401) {
-                setPopupMessage('Invalid username or password');
-            } else {
-                setPopupMessage('Login failed, please check your credentials');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            setPopupMessage('Login failed, please try again');
+        
+        if (!username || !password) {
+            setPopupMessage('Username and password are required');
+            setTimeout(() => setPopupMessage(''), 3000);
+            return;
         }
-        setTimeout(() => setPopupMessage(''), 3000);
-    };
 
-    const handleCreateProfile = async (e) => {
+        const response = await fetch(process.env.REACT_APP_LOGIN_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+
+        const data = await handleApiResponse(response);
+        
+        setPopupMessage('Login successful');
+        setTimeout(() => {
+            setPopupMessage('');
+            navigate('/home');
+        }, 1000);
+        
+        handleLogin(dispatch, { username, password }, navigate);
+        dispatch({ type: 'LOGIN_SUCCESS' });
+    }, setPopupMessage);
+
+    const handleCreateProfile = withErrorHandling(async (e) => {
         e.preventDefault();
-        try {
-            const response = await fetch(
-                process.env.REACT_APP_CREATE_PROFILE_API_URL, 
-                {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password, email, role })
-            });
-            if (response.ok) {
-                const data = await response.json();
-                console.log('Profile created:', data);
-                setPopupMessage('Profile created');
-                setUsername('');
-                setPassword('');
-                setEmail('');
-                setRole('user');
-                // Automatically log in the user after profile creation
-                handleLogin(dispatch, { username, password }, navigate);
-            } else {
-                setPopupMessage('Unable to create profile, try again please');
-            }
-        } catch (error) {
-            console.error('Error creating profile:', error);
-            setPopupMessage('Unable to create profile, try again please');
-        }
-        setTimeout(() => setPopupMessage(''), 3000);
-    };
+        
+        const response = await fetch(process.env.REACT_APP_CREATE_PROFILE_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password, email, role })
+        });
+
+        const data = await handleApiResponse(response);
+        
+        setPopupMessage('Profile created successfully');
+        setUsername('');
+        setPassword('');
+        setEmail('');
+        setRole('user');
+        
+        // Automatically log in the user after profile creation
+        await handleLogin(dispatch, { username, password }, navigate);
+    }, setPopupMessage);
 
     return (
         <div className="login-page">

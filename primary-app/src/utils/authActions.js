@@ -1,60 +1,60 @@
 import { loginStart, loginSuccess, loginFailure, logout } from '../store/authSlice';
 import Cookies from 'js-cookie';
-// import axios from 'axios';
-// TODO: Implement CRUD operations for user management operations
-// TODO: Implment JWT authentication for secure API access
+import { handleApiResponse, withErrorHandling } from './errorHandling';
 
-// Use environment variable for API base URL; ensure REACT_APP_API_BASE_URL is set in your production environment
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
-// Function to handle user login
-const handleLogin = (userData, navigate) => async (dispatch) => { // Redux thunk pattern
+// Enhanced login handler with consistent error handling
+const handleLogin = (userData, navigate) => async (dispatch) => {
     dispatch(loginStart());
-    // Validate userData before making API call
-    if (!userData || !userData.username || !userData.password) {
+
+    if (!userData?.username || !userData?.password) {
         dispatch(loginFailure('Username and password are required'));
         return;
     }
-    try {
-        const response = await fetch(`${API_BASE_URL}/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(userData)
-        });
 
-        if (response.ok) {
-            const data = await response.json();
+    try {
+        await withErrorHandling(async () => {
+            const response = await fetch(`${API_BASE_URL}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(userData)
+            });
+
+            const data = await handleApiResponse(response);
             const { id, username, email, role, token } = data;
 
-            localStorage.setItem('token', data.token);
+            // Store auth data
+            localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify({ id, username, email, role }));
 
-            Cookies.set('token', data.token, { expires: 7, secure: true });
+            Cookies.set('token', token, { expires: 7, secure: true });
             Cookies.set('username', username, { expires: 7, secure: true });
 
-            // Dispatch success action with user data
-            dispatch(loginSuccess({ user: { id, username, email, role}, token: token }));
+            // Update application state
+            dispatch(loginSuccess({ user: { id, username, email, role}, token }));
             
-            // Navigate to Home page after login
             if (navigate) {
                 navigate('/home', { state: { user: { id, username, email, role } } });
             }
-        } else {
-            const errorData = await response.json();
-            dispatch(loginFailure(errorData.message || 'Login failed, please try again'));
-        }
+        }, (error) => {
+            const message = error.status === 401 ? 'Invalid username or password' : 
+                        error.message || 'Login failed, please try again';
+            dispatch(loginFailure(message));
+        })();
     } catch (error) {
-        // Log error with additional context for debugging
         console.error('Login error in handleLogin:', error, {
             userData,
             apiUrl: `${API_BASE_URL}/login`
         });
-        dispatch(loginFailure(error.message || 'Login failed, please try again'));
     }
 };
-const handleLogout = (dispatch, navigate) => {
+
+// Enhanced logout handler
+const handleLogout = withErrorHandling(async (dispatch, navigate) => {
     // Clear user data and token from local storage and cookies
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     Cookies.remove('token');
     Cookies.remove('username');
     
@@ -65,13 +65,12 @@ const handleLogout = (dispatch, navigate) => {
     if (navigate) {
         navigate('/login');
     }
-};
+}, console.error); // Just log any errors that occur during logout
 
-const redirectToHome = () => {
-    // Redirect to home page after logout
+const redirectToHome = withErrorHandling(async () => {
     if (window.location.pathname !== '/home') {
         window.location.href = '/home';
     }
-};
+}, console.error);
 
-export { handleLogin, handleLogout, redirectToHome }; // Export the functions for use in components
+export { handleLogin, handleLogout, redirectToHome };

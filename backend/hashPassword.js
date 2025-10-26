@@ -15,7 +15,7 @@ const connection = mysql.createConnection({
 const saltRounds = 10;
 
 // Select all users and their current passwords
-connection.query('SELECT idusers, userpassword FROM userprofile', async (err, results) => {
+connection.query('SELECT idusers, password FROM userprofile', async (err, results) => {
     if (err) {
         console.error('Error fetching users:', err);
         connection.end();
@@ -36,7 +36,7 @@ connection.query('SELECT idusers, userpassword FROM userprofile', async (err, re
 
             // Update the userpassword column with the hashed password
             connection.query(
-                'UPDATE userprofile SET userpassword = ? WHERE idusers = ?',
+                'UPDATE userprofile SET password = ? WHERE idusers = ?',
                 [hash, idusers],
                 (updateErr) => {
                     if (updateErr) {
