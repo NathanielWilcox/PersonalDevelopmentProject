@@ -2,58 +2,33 @@ import React from 'react';
 import '../index.css';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { handleLogout } from '../utils/authActions'; // Only use handleLogout for logout logic, handleLogin is not used in NavBar(see Login component for login logic)
+import { handleLogout } from '../utils/authActions';
 import Cookies from 'js-cookie';
 
-// TODO: Decide if login state should be managed here or handled globally via Redux, currently using Redux for global state management so
-const NavBar = ({ onLogout }) => {
+const NavBar = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
-    // Use global loggedIn state from Redux and the reducer
-    const isLoggedIn = useSelector((state) => state.auth.isLoggedIn); // Accessing the global state for login status
-    console.log('NavBar isLoggedIn:', isLoggedIn); // Debugging log to check login status
-    // Example: Store user data as cookies when logged in
-
-    // Get user data from Redux (replace 'user' with your actual user state)
+    const isLoggedIn = useSelector((state) => state.auth.isLoggedIn);
     const user = useSelector((state) => state.auth.user);
-    // Debugging log to check if user is logged in
-    console.log('NavBar user:', useSelector((state) => state.auth.user)); // Debugging log to check user state
 
-
-    // Debugging log to check if dispatch, navigate and cookies are working
-    console.log('NavBar dispatch:', dispatch); // Debugging log to check dispatch
-    console.log('NavBar navigate:', navigate); // Debugging log to check navigate
-    console.log('NavBar Cookies:', Cookies.get()); // Debugging log to check cookies
-
-    //TODO: Remove test user data and replace with db connections and API calls
-    // const testUser = {
-    //     username: 'testuser',
-    //     email: 'test@email.com'
-    // };
-    // console.log('Test User:', testUser); // Debugging log to check test user data
-    
     // Set or remove cookies based on login state
     React.useEffect(() => {
         if (isLoggedIn && user) {
-            // Set user data as cookies (e.g., username)
             Cookies.set('username', user.username, { expires: 7, secure: true });
-            // Add more user fields as needed
         } else {
-            // Remove cookies on logout
             Cookies.remove('username');
         }
     }, [isLoggedIn, user]);
 
-    // Handle login click - navigate to login page
     const handleLoginClick = () => {
         navigate('/login');
     };
+
     const handleLogoutClick = () => {
-        // Only use handleLogout for logout logic
-        handleLogout(dispatch, onLogout);
-    }
-  
+        handleLogout(dispatch, navigate);
+    };
+
     return (
         <nav className="navbar">
             <ul className="navbar-left">
@@ -72,7 +47,7 @@ const NavBar = ({ onLogout }) => {
                 )}
                 <li>
                     {isLoggedIn ? (
-                        <NavLink to="/home" className="nav-link" onClick={handleLogoutClick}>Logout</NavLink>
+                        <button onClick={handleLogoutClick} className="nav-link logout-btn">Logout</button>
                     ) : (
                         <NavLink to="/login" className="nav-link" onClick={handleLoginClick}>Login</NavLink>
                     )}
@@ -83,10 +58,3 @@ const NavBar = ({ onLogout }) => {
 };
 
 export default NavBar;
-// TODO: Refactor NavBar to use a dedicated CSS file for styling instead of importing component files.
-// TODO: Highlight the active NavLink based on the current route.
-// TODO: Add accessibility features (aria-labels, keyboard navigation).
-// TODO: Make NavBar responsive for mobile devices (hamburger menu).
-// TODO: Add user avatar or name when logged in.
-// TODO: Write unit tests for NavBar component.
-// TODO: Optimize NavBar rendering to avoid unnecessary re-renders.

@@ -24,7 +24,7 @@ const app = express();
 
 // Database configuration
 const dbConfig = {
-    host: process.env.DB_HOST === 'mysql' ? 'localhost' : process.env.DB_HOST,
+    host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_CONNECTION_PASSWORD,
     database: process.env.DB_NAME,

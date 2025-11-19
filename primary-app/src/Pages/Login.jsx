@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import '../index.css';
 import { handleLogin } from '../utils/authActions';
 import { handleApiResponse, withErrorHandling } from '../utils/errorHandling';
@@ -15,7 +15,19 @@ const Login = () => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
 
-    const handleSubmit = withErrorHandling(async (e) => {
+    // Get auth error from Redux state
+    const authError = useSelector((state) => state.auth.error);
+    const isLoading = useSelector((state) => state.auth.loading);
+
+    // Display auth errors in popup
+    useEffect(() => {
+        if (authError) {
+            setPopupMessage(authError);
+            setTimeout(() => setPopupMessage(''), 3000);
+        }
+    }, [authError]);
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (!username || !password) {
@@ -24,22 +36,15 @@ const Login = () => {
             return;
         }
 
-        const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
-        });
-
-        await handleApiResponse(response);
-        setPopupMessage('Login successful');
-        setTimeout(() => {
-            setPopupMessage('');
-            navigate('/home');
-        }, 1000);
-
-        handleLogin(dispatch, { username, password }, navigate);
-        dispatch({ type: 'LOGIN_SUCCESS' });
-    }, setPopupMessage);
+        try {
+            await dispatch(handleLogin({ username, password }, navigate));
+            setPopupMessage('Login successful');
+            setTimeout(() => setPopupMessage(''), 1000);
+        } catch (error) {
+            setPopupMessage(error.message || 'Login failed');
+            setTimeout(() => setPopupMessage(''), 3000);
+        }
+    };
 
     const handleCreateProfile = withErrorHandling(async (e) => {
         e.preventDefault();
