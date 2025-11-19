@@ -9,13 +9,12 @@ const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [email, setEmail] = useState('');
-    const [role, setRole] = useState('user'); // Default role is 'user'
+    const [role, setRole] = useState('user');
     const [popupMessage, setPopupMessage] = useState('');
-    const [activeForm, setActiveForm] = useState('login'); // 'login' or 'createProfile'
+    const [activeForm, setActiveForm] = useState('login');
     const navigate = useNavigate();
     const dispatch = useDispatch();
 
-    // Handle form submission for login
     const handleSubmit = withErrorHandling(async (e) => {
         e.preventDefault();
 
@@ -31,8 +30,7 @@ const Login = () => {
             body: JSON.stringify({ username, password })
         });
 
-        const data = await handleApiResponse(response);
-
+        await handleApiResponse(response);
         setPopupMessage('Login successful');
         setTimeout(() => {
             setPopupMessage('');
@@ -52,15 +50,13 @@ const Login = () => {
             body: JSON.stringify({ username, password, email, role })
         });
 
-        const data = await handleApiResponse(response);
-
+        await handleApiResponse(response);
         setPopupMessage('Profile created successfully');
         setUsername('');
         setPassword('');
         setEmail('');
         setRole('user');
 
-        // Automatically log in the user after profile creation
         await handleLogin(dispatch, { username, password }, navigate);
     }, setPopupMessage);
 
@@ -131,7 +127,7 @@ const Login = () => {
                             <option value="photographer">Photographer</option>
                             <option value="videographer">Videographer</option>
                             <option value="musician">Musician</option>
-                            <option value="technician">Technician</option>
+                            <option value="artist">Artist</option>
                         </select>
                         <button type="submit">Create Profile</button>
                     </form>
@@ -142,9 +138,3 @@ const Login = () => {
 };
 
 export default Login;
-// Note: The above code now uses Redux for global isLoggedIn state.
-// TODO: Keep username, password, and popupMessage as local state.
-// TODO: Move isLoggedIn to a global state manager (e.g., Redux or Context API) for app-wide access.
-// TODO: Keep the navigate function from useNavigate local to the component.
-// TODO: Update handleSubmit, handleCreateProfile, and onLogout to interact with global isLoggedIn state (dispatch actions if using Redux/Context).
-// TODO: Keep error handling local unless a global error handler is needed.
