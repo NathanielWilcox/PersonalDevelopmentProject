@@ -1,0 +1,83 @@
+{
+  "tableName": "userprofile",
+  "description": "User Profile table for visual media social platform project",
+  "engine": "InnoDB",
+  "charset": "utf8mb4",
+  "collation": "utf8mb4_0900_ai_ci",
+  "autoIncrement": 6,
+  "columns": {
+    "idusers": {
+      "type": "int",
+      "nullable": false,
+      "autoIncrement": true,
+      "primaryKey": true
+    },
+    "username": {
+      "type": "varchar",
+      "length": 45,
+      "nullable": false,
+      "unique": true
+    },
+    "password": {
+      "type": "varchar",
+      "length": 255,
+      "nullable": false
+    },
+    "email": {
+      "type": "varchar",
+      "length": 100,
+      "nullable": true,
+      "defaultValue": null
+    },
+    "role": {
+      "type": "enum",
+      "values": [
+        "user",
+        "photographer",
+        "videographer",
+        "musician",
+        "artist",
+        "admin"
+      ],
+      "defaultValue": "user",
+      "nullable": true
+    },
+    "created": {
+      "type": "timestamp",
+      "nullable": true,
+      "defaultValue": "CURRENT_TIMESTAMP"
+    }
+  },
+  "indexes": {
+    "PRIMARY": {
+      "columns": ["idusers"],
+      "type": "PRIMARY KEY"
+    },
+    "username": {
+      "columns": ["username"],
+      "type": "UNIQUE"
+    },
+    "idx_username": {
+      "columns": ["username"],
+      "type": "INDEX"
+    },
+    "idx_email": {
+      "columns": ["email"],
+      "type": "INDEX"
+    },
+    "idx_role_created": {
+      "columns": ["role", "created"],
+      "type": "INDEX"
+    }
+  },
+  "constraints": {
+    "chk_email": {
+      "type": "CHECK",
+      "condition": "regexp_like(email, '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+.[A-Za-z]{2,}$') OR email IS NULL"
+    },
+    "chk_username_length": {
+      "type": "CHECK",
+      "condition": "length(username) >= 3"
+    }
+  }
+}
