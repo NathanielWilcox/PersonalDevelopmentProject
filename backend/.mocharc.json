@@ -1,0 +1,10 @@
+{
+  "require": ["./tests/mocha.env.js"],
+  "recursive": true,
+  "timeout": 5000,
+  "exit": true,
+  "ui": "bdd",
+  "reporter": "spec",
+  "colors": true,
+  "slow": 1000
+}
