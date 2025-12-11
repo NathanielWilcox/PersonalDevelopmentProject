@@ -38,3 +38,4 @@ coverage/
 .DS_Store
 .vscode/
 .idea/
+.agent/AGENTIC_INSTRUCTIONS.md

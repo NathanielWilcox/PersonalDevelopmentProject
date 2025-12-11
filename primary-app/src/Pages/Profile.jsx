@@ -1,15 +1,15 @@
 // Description: A simple profile page component that allows users to view and edit their profile information.
-// This component includes a profile picture, name, email, and bio fields.
-// TODO: Update the profile information when isLoggedIn state changes to true. Only display test data when isLoggedIn is false.
-// TODO: Add functionality to fetch user data from the backend when the component mounts.
 import React, { useState, useEffect } from 'react';
-import { handleApiResponse, withErrorHandling } from '../utils/errorHandling';
+import { useSelector } from 'react-redux';
+import { handleApiResponse, getUserFriendlyError } from '../utils/errorHandling';
+
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8800';
+
+console.log('Profile.jsx - API_BASE_URL:', API_BASE_URL);
 
 // Helper function to validate avatar URLs
 function getSafeAvatarUrl(url) {
-	// Only allow http, https, or safe data:image URLs (no SVG or other dangerous types)
 	if (typeof url === 'string') {
-		// Disallow SVG images explicitly
 		if (
 			url.startsWith('https://') ||
 			url.startsWith('http://') ||
@@ -21,102 +21,147 @@ function getSafeAvatarUrl(url) {
 				url.startsWith('data:image/webp')
 			)
 		) {
-			// Extra check: reject any data:image/svg+xml or data:image/svg
-			if (
-				url.startsWith('data:image/svg') ||
-				url.startsWith('data:image/svg+xml')
-			) {
+			if (url.startsWith('data:image/svg')) {
 				return 'https://placehold.co/150x150';
 			}
 			return url;
 		}
 	}
-	// Fallback to a default image if unsafe
 	return 'https://placehold.co/150x150';
 }
 
 const Profile = () => {
+    // Get user info and token from Redux
+    const user = useSelector((state) => state.auth.user);
+    const token = useSelector((state) => state.auth.token);
+
     // State for user data
-    const [user, setUser] = useState({
-        name: 'John Doe',
-        email: 'johndoe@example.com',
-        bio: 'Software developer with a passion for creating amazing applications.',
-        avatar: 'https://placehold.co/150x150',
+    const [profileData, setProfileData] = useState({
+        username: '',
+        email: '',
+        role: 'user',
     });
 
     // UI state management
     const [isEditing, setIsEditing] = useState(false);
-    const [formData, setFormData] = useState({ ...user });
-    
-    // Loading and error states
-    const [isLoading, setIsLoading] = useState(false);        // Track if data is being fetched/saved
-    const [error, setError] = useState(null);                 // Track any error messages
-    const [isSaving, setIsSaving] = useState(false);          // Track save operations specifically
+    const [formData, setFormData] = useState({ ...profileData });
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [isSaving, setIsSaving] = useState(false);
 
     // Fetch profile data when component mounts
     useEffect(() => {
-        fetchUserProfile();
-    }, []); // Empty dependency array means this runs once on mount
+        if (user?.id && token) {
+            fetchUserProfile();
+        }
+    }, [user, token]);
 
-    // Enhanced fetch profile function with consistent error handling
-    const fetchUserProfile = withErrorHandling(async () => {
-        const response = await fetch('http://localhost:8800/api/userprofile');
-        const data = await handleApiResponse(response);
-        
-        setUser(data);
-        setFormData(data);
-    }, setError, setIsLoading);
+    // Fetch profile function with proper error handling
+    const fetchUserProfile = async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
+            
+            const url = `${API_BASE_URL}/api/userprofile`;
+            console.log('🔵 Fetching profile from:', url);
+            console.log('🔵 Token from Redux:', token);
+            console.log('🔵 Token type:', typeof token);
+            console.log('🔵 Token length:', token ? token.length : 'NO TOKEN');
+            console.log('🔵 Token preview:', token ? token.substring(0, 50) + '...' : 'NO TOKEN');
+            
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            console.log('🔵 Response status:', response.status);
+            
+            const data = await handleApiResponse(response);
+            console.log('🔵 Profile data:', data);
+            
+            setProfileData(data);
+            setFormData(data);
+        } catch (err) {
+            console.error('❌ Profile fetch failed:', err);
+            const friendlyError = getUserFriendlyError(err);
+            console.error('📌 Friendly error:', friendlyError);
+            setError(friendlyError);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
     };
 
-    // Enhanced save function with consistent error handling
-    const handleSave = withErrorHandling(async () => {
-        const response = await fetch('http://localhost:8800/api/userprofile', {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(formData)
-        });
+    // Save profile function with proper error handling
+    const handleSave = async () => {
+        try {
+            setIsSaving(true);
+            setError(null);
+            
+            const url = `${API_BASE_URL}/userprofile/${user.id}`;
+            console.log('🔵 Saving profile to:', url);
+            
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(formData)
+            });
 
-        await handleApiResponse(response);
-        setUser(formData);
-        setIsEditing(false);
-    }, setError, setIsSaving);
+            const data = await handleApiResponse(response);
+            console.log('🟢 Profile saved:', data);
+            
+            setProfileData(formData);
+            setIsEditing(false);
+        } catch (err) {
+            console.error('❌ Save failed:', err);
+            const friendlyError = getUserFriendlyError(err);
+            console.error('📌 Friendly error:', friendlyError);
+            setError(friendlyError);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
 
 	return (
 		<>
 			<div style={{ textAlign: 'center', padding: '20px' }}>
-				{/* Show error message if there is one */}
 				{error && (
-					<div style={{ color: 'red', marginBottom: '10px' }}>
+					<div style={{ color: 'red', marginBottom: '10px', padding: '10px', backgroundColor: '#ffe6e6' }}>
 						Error: {error}
 					</div>
 				)}
 
-				{/* Show loading spinner when fetching data */}
 				{isLoading ? (
 					<div>Loading profile data...</div>
 				) : (
-					<img
-						src={getSafeAvatarUrl(user.avatar)}
-						alt="User Avatar"
-						style={{ borderRadius: '50%', width: '150px', height: '150px' }}
-					/>
-				)}
-				{isEditing ? (
 					<div>
+						<h1>{profileData.username}</h1>
+						<p>Email: {profileData.email}</p>
+						<p>Role: {profileData.role}</p>
+					</div>
+				)}
+
+				{isEditing ? (
+					<div style={{ marginTop: '20px', border: '1px solid #ccc', padding: '20px', borderRadius: '5px', maxWidth: '400px', margin: '20px auto' }}>
+						<h2>Edit Profile</h2>
 						<input
 							type="text"
-							name="name"
-							value={formData.name}
+							name="username"
+							value={formData.username}
 							onChange={handleInputChange}
-							placeholder="Name"
-							style={{ margin: '10px', padding: '5px' }}
-                            disabled={isSaving}  // Disable inputs while saving
+							placeholder="Username"
+							disabled={isSaving}
+							style={{ width: '100%', margin: '10px 0', padding: '8px' }}
 						/>
 						<input
 							type="email"
@@ -124,62 +169,70 @@ const Profile = () => {
 							value={formData.email}
 							onChange={handleInputChange}
 							placeholder="Email"
-                            disabled={isSaving}  // Disable inputs while saving
+							disabled={isSaving}
+							style={{ width: '100%', margin: '10px 0', padding: '8px' }}
 						/>
-						<button 
-							onClick={handleSave} 
-							disabled={isSaving}
-							style={{ margin: '10px', padding: '5px 15px' }}
-						>
-							{isSaving ? 'Saving...' : 'Save Changes'}
-						</button>
-						<button 
-							onClick={handleSave} 
-							disabled={isSaving}
-							style={{ margin: '10px', padding: '5px 15px' }}
-						>
-							{isSaving ? 'Saving...' : 'Save Changes'}
-							style={{ margin: '10px', padding: '5px' }}
-						</button>
-						<textarea
-							name="bio"
-							value={formData.bio}
+						<select
+							name="role"
+							value={formData.role}
 							onChange={handleInputChange}
-							placeholder="Bio"
-							style={{
-								margin: '10px',
-								padding: '5px',
-								width: '200px',
-								height: '100px',
-							}}
-						/>
-						<div>
-							<button
-								onClick={handleSave}
-								style={{ margin: '10px', padding: '5px 10px' }}
+							disabled={isSaving}
+							style={{ width: '100%', margin: '10px 0', padding: '8px' }}
+						>
+							<option value="user">User</option>
+							<option value="photographer">Photographer</option>
+							<option value="videographer">Videographer</option>
+							<option value="musician">Musician</option>
+							<option value="artist">Artist</option>
+						</select>
+						<div style={{ marginTop: '20px' }}>
+							<button 
+								onClick={handleSave} 
+								disabled={isSaving}
+								style={{ 
+									margin: '0 10px', 
+									padding: '10px 20px',
+									backgroundColor: '#4CAF50',
+									color: 'white',
+									border: 'none',
+									borderRadius: '4px',
+									cursor: isSaving ? 'not-allowed' : 'pointer'
+								}}
 							>
-								Save
+								{isSaving ? 'Saving...' : 'Save Changes'}
 							</button>
-							<button
-								onClick={() => setIsEditing(false)}
-								style={{ margin: '10px', padding: '5px 10px' }}
+							<button 
+								onClick={() => setIsEditing(false)} 
+								disabled={isSaving}
+								style={{ 
+									margin: '0 10px', 
+									padding: '10px 20px',
+									backgroundColor: '#f44336',
+									color: 'white',
+									border: 'none',
+									borderRadius: '4px',
+									cursor: 'pointer'
+								}}
 							>
 								Cancel
 							</button>
 						</div>
 					</div>
 				) : (
-					<div>
-						<h1>{user.name}</h1>
-						<p>Email: {user.email}</p>
-						<p>{user.bio}</p>
-						<button
-							onClick={() => setIsEditing(true)}
-							style={{ margin: '10px', padding: '5px 10px' }}
-						>
-							Edit Profile
-						</button>
-					</div>
+					<button
+						onClick={() => setIsEditing(true)}
+						style={{ 
+							marginTop: '20px',
+							padding: '10px 20px',
+							backgroundColor: '#2196F3',
+							color: 'white',
+							border: 'none',
+							borderRadius: '4px',
+							cursor: 'pointer'
+						}}
+					>
+						Edit Profile
+					</button>
 				)}
 			</div>
 		</>
@@ -187,15 +240,5 @@ const Profile = () => {
 };
 
 export default Profile;
-// TODO: Add functionality to fetch user data from the backend when the component mounts.
-// TODO: Add functionality to update the user profile in the backend when the Save button is clicked.
-// Note: Backend enforces the following constraints:
-// - Username must be at least 3 characters long
-// - Email must be in valid format (if provided)
-// - Role must be one of: 'user', 'photographer', 'videographer', 'musician', 'artist', 'admin'
-// TODO: Add error handling for the fetch requests.
-// TODO: Add loading states for the fetch requests.
-// TODO: Add validation for the form inputs (e.g., email format, required fields).
-// TODO: Add a profile picture selection feature.
 
 // General category: User Profile Management / CRUD Operations

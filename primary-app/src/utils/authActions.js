@@ -28,6 +28,7 @@ const handleLogin = (userData, navigate) => async (dispatch) => {
         console.log('🔵 Response data:', data);
 
         const { id, username, email, role, token } = data;
+        console.log('🔵 Extracted token:', token ? token.substring(0, 30) + '...' : 'NO TOKEN');
 
         // Store auth data
         localStorage.setItem('token', token);
@@ -37,7 +38,7 @@ const handleLogin = (userData, navigate) => async (dispatch) => {
         Cookies.set('username', username, { expires: 7, secure: true });
 
         // Update application state
-        console.log('✅ Dispatching loginSuccess with user:', { id, username, email, role });
+        console.log('✅ Dispatching loginSuccess with user:', { id, username, email, role }, 'and token');
         dispatch(loginSuccess({ user: { id, username, email, role }, token }));
 
         if (navigate) {

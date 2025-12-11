@@ -16,14 +16,28 @@ export class APIError extends Error {
  * @returns {Promise} - Resolves with response JSON or throws APIError
  */
 export async function handleApiResponse(response) {
-    const data = await response.json().catch(() => null);
+    let data = null;
+    const contentType = response.headers.get('content-type');
+    
+    try {
+        if (contentType && contentType.includes('application/json')) {
+            data = await response.json();
+        } else {
+            const text = await response.text();
+            data = text ? { message: text } : null;
+        }
+    } catch (err) {
+        console.error('Failed to parse response:', err);
+        data = null;
+    }
     
     if (!response.ok) {
-        throw new APIError(
-            data?.error || 'An error occurred',
-            response.status,
-            data
-        );
+        const errorMessage = 
+            typeof data?.error === 'string' ? data.error :
+            typeof data?.error?.message === 'string' ? data.error.message :
+            data?.message || `HTTP ${response.status}: ${response.statusText}`;
+        
+        throw new APIError(errorMessage, response.status, data);
     }
     
     return data;

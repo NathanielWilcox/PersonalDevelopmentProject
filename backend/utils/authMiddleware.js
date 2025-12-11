@@ -7,18 +7,20 @@ import { AuthenticationError, AuthorizationError, withJwtErrorHandling } from '.
  * @param {Object} res - Express response object
  * @param {Function} next - Express next function
  */
-export const verifyToken = async (req, res, next) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        throw new AuthenticationError('Missing or invalid authorization header');
-    }
+export const verifyToken = (req, res, next) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            throw new AuthenticationError('Missing or invalid authorization header');
+        }
 
-    const token = authHeader.split(' ')[1];
-    await withJwtErrorHandling(async () => {
+        const token = authHeader.split(' ')[1];
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         req.user = decoded;
         next();
-    }, 'Invalid or expired token');
+    } catch (err) {
+        next(err); // Pass error to error handler middleware
+    }
 };
 
 /**
@@ -28,14 +30,18 @@ export const verifyToken = async (req, res, next) => {
  */
 export const verifyRoles = (allowedRoles) => {
     return (req, res, next) => {
-        if (!req.user || !req.user.role) {
-            throw new AuthenticationError('User not authenticated');
-        }
+        try {
+            if (!req.user || !req.user.role) {
+                throw new AuthenticationError('User not authenticated');
+            }
 
-        if (!allowedRoles.includes(req.user.role)) {
-            throw new AuthorizationError('User not authorized to access this resource');
-        }
+            if (!allowedRoles.includes(req.user.role)) {
+                throw new AuthorizationError('User not authorized to access this resource');
+            }
 
-        next();
+            next();
+        } catch (err) {
+            next(err); // Pass error to error handler middleware
+        }
     };
 };

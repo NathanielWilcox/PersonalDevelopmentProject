@@ -239,7 +239,7 @@ app.put('/userprofile/:id',
     verifyToken,
     verifyRoles(['user', 'photographer', 'videographer', 'musician', 'artist', 'admin']),
     asyncHandler(async (req, res) => {
-        const userId = req.params.id;
+        const userId = Number(req.params.id);
         const requestingUserId = req.user.id;
         const userRole = req.user.role;
 
@@ -353,5 +353,9 @@ const startServer = async () => {
 // Global error handler - must be last
 app.use(errorHandler);
 
-// Start the server
-startServer();
+// Start the server only in non-test environments
+if (process.env.NODE_ENV !== 'test') {
+    startServer();
+}
+
+export default app;

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import NavBar from './Components/NavBar';
+import ProtectedRoute from './Components/ProtectedRoute';
 import './index.css';
 import Login from './Pages/Login';
 import Home from './Pages/Home';
@@ -13,18 +14,16 @@ const App = () => {
 		<NavBar />
 		<Routes>
 			<Route path="/login" element={<Login />} />
-			<Route path="/home" element={<Home />} />
-			<Route path="/map" element={<Map />} />
-			<Route path="/profile" element={<Profile />} />
-			<Route path="/" element={<Home />} />
+			<Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+			<Route path="/map" element={<ProtectedRoute><Map /></ProtectedRoute>} />
+			<Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+			<Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
 		</Routes>
 		</>
 	);
 };
 
 export default App;
-// TODO: Protect routes and handle user authorization.
-// TODO: Implement user roles and permissions.
 /*
 TODO: 
 - Protect routes and handle user authorization.

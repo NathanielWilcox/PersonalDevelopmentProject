@@ -37,6 +37,9 @@ const authSlice = createSlice({
     updateProfile: (state, action) => {
       state.user = { ...state.user, ...action.payload };
     },
+    setHydrationComplete: (state) => {
+      state.loading = false;
+    },
   },
 });
 
@@ -46,6 +49,7 @@ export const {
   loginFailure,
   logout,
   updateProfile,
+  setHydrationComplete,
 } = authSlice.actions;
 
 export default authSlice.reducer;
