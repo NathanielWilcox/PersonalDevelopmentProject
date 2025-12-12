@@ -38,4 +38,6 @@ coverage/
 .DS_Store
 .vscode/
 .idea/
+.agent/
 .agent/AGENTIC_INSTRUCTIONS.md
+.github/
