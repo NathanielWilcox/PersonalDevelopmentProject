@@ -42,17 +42,68 @@ curl http://localhost:8800/ping
 
 Both `.env` files are pre-configured in the repository:
 
-- `backend/.env` — Database & JWT configuration
+- `backend/.env` — Database & JWT configuration (includes rotated JWT_SECRET)
 - `primary-app/.env` — Frontend API URLs
 
 **To modify for production**, update:
 
 - `FRONTEND_HOST` in `backend/.env` (for CORS)
 - `REACT_APP_API_BASE_URL` in `primary-app/.env` (if backend moves)
+- Set `secure: true` in `backend/index.js` login endpoint (requires HTTPS)
+- Generate new JWT_SECRET: `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`
 
 ---
 
-## 📋 Project Structure
+## � Security Implementation (v1.1)
+
+As of December 2025, the application includes critical security hardening:
+
+### Authentication & Token Storage
+
+- **JWT Storage**: Tokens are stored in **HTTP-only cookies**, preventing XSS token theft
+  - Old approach: localStorage (vulnerable to XSS)
+  - New approach: HTTP-only cookie with `sameSite: 'strict'` and `httpOnly: true`
+  - JavaScript cannot access the token; browser automatically includes it with requests
+
+- **JWT Secret Management**: Rotated to cryptographically secure 256-bit random value
+  - Stored in `backend/.env` (excluded from Git via .gitignore)
+  - 1-hour token expiration enforced
+  - All old tokens invalidated after secret rotation
+
+### CSRF Protection
+
+- **CSRF Middleware**: Implemented using `csurf` package
+  - Endpoint: `GET /csrf-token` returns fresh CSRF tokens
+  - Tokens required for state-changing operations (POST, PUT, DELETE)
+  - Cookie-based CSRF verification
+
+### Security Headers
+
+- **Helmet Middleware**: Provides security-focused HTTP headers
+  - Content Security Policy (CSP) to prevent inline script injection
+  - X-Frame-Options to prevent clickjacking
+  - HSTS for HTTPS enforcement
+  - X-Content-Type-Options to prevent MIME sniffing
+
+### API Communication
+
+- **Fetch Pattern**: All API calls use `credentials: 'include'`
+  - Enables automatic cookie inclusion in cross-origin requests
+  - Removed `Authorization: Bearer <token>` header pattern
+  - Backend reads tokens from `req.cookies.token`
+
+### Verified Security
+
+✅ HTTP-only cookie authentication functional  
+✅ CSRF token endpoint working  
+✅ All 25+ API calls updated to use credentials mode  
+✅ Security headers present in all responses  
+✅ No localStorage token exposure  
+✅ XSS attack surface for auth tokens eliminated  
+
+---
+
+## �📋 Project Structure
 
 ``` markdown
 Development Day Project/
@@ -129,6 +180,32 @@ Development Day Project/
 6. **Role-Based Access** → `verifyRoles` middleware checks permissions
 7. **Database Query** → Parameterized query executes, returns data
 8. **Response Sent** → Global error handler formats response
+
+---
+
+## ✨ Features
+
+### Home Feed (Media Upload & Pagination)
+
+Users can create posts with photos/videos, discover content through an infinite-scroll feed with filtering by user role and media type.
+
+**Backend Endpoints**:
+- `POST /api/posts` — Create post with file upload (multipart/form-data)
+- `GET /api/posts/feed?page=1&limit=10&filter_by=photographer&media_type=photo&sort=newest` — Paginated feed with filters
+- `GET /api/posts/:id` — Get single post with tags
+- `DELETE /api/posts/:id` — Delete own posts
+- `GET /api/posts/user/:userId` — Get user's posts
+
+**Database**:
+- `posts` table — id, user_id (FK), title, description, media_type, media_url, visibility, created_at, updated_at, likes_count, comments_count
+- `post_tags` table — post_id (FK), tag
+
+**Frontend**:
+- Components: `CreatePostModal`, `PostCard`, `PostsFeed`, `FeedFilters`, updated `Home.jsx`
+- State: `postsSlice.js` with async thunks for fetch/create/delete
+- Features: Infinite scroll (Intersection Observer), filter by role/media type, sort by newest/popular, rate limiting (20 posts/hour)
+
+**Setup**: Run migration — `mysql -u root -p profiledata < backend/queries/create_posts_table.sql`
 
 ---
 

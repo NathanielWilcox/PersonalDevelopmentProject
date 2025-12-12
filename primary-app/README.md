@@ -2,7 +2,7 @@
 
 ## Overview
 
-React-based frontend for a social platform serving photographers, videographers, actors, and models. Built with modern React patterns, Redux Toolkit for state management, and React Router v7 for navigation.
+React-based frontend for a social platform serving photographers, videographers, actors, and models. Built with modern React patterns, Redux Toolkit for state management, and React Router v7 for navigation. Uses HTTP-only cookie authentication for enhanced security.
 
 **Stack**: React 19 + Redux Toolkit + React Router v7 + CSS3
 
@@ -63,18 +63,59 @@ primary-app/
 | **Cookies** | js-cookie | 3.0.5 | Token persistence |
 | **Build Tool** | react-scripts | 5.0.1 | CRA build system |
 
+## Security Implementation (v1.1)
+
+### HTTP-Only Cookie Authentication
+
+- **Token Storage**: JWT tokens now stored in HTTP-only cookies set by backend
+  - Old approach: `localStorage.token` (vulnerable to XSS)
+  - New approach: HTTP-only, sameSite=strict cookie (inaccessible to JavaScript)
+  - Automatic inclusion: Browser automatically includes cookie with requests (`credentials: 'include'`)
+
+### Removed localStorage Token Storage
+
+- No longer storing tokens in `localStorage`
+- Only user profile data stored locally (non-sensitive information)
+- Token lifecycle managed entirely by browser cookie handling
+
+### API Communication Pattern
+
+All API calls now use the `credentials: 'include'` pattern:
+
+```javascript
+// OLD (no longer used)
+fetch(url, {
+  headers: {
+    'Authorization': `Bearer ${token}` // Token exposed in request header
+  }
+})
+
+// NEW (current implementation)
+fetch(url, {
+  credentials: 'include' // Browser automatically includes HTTP-only cookie
+})
+```
+
+### CSRF Protection
+
+- Frontend can optionally retrieve CSRF tokens from `GET /csrf-token` endpoint
+- Tokens can be included in request headers for state-changing operations
+- Backend validates CSRF tokens for POST, PUT, DELETE requests
+
+---
+
 ## Core Concepts
 
-### Authentication Flow
+### Authentication Flow (Updated v1.1)
 
 1. **Login Request** → User submits credentials on `/login`
 2. **Dispatch Action** → `handleLogin()` dispatches `loginStart()`
-3. **API Call** → POST to `{API_BASE_URL}/login` with username/password
-4. **Token Response** → Backend returns JWT token + user info
-5. **Store in Redux** → Dispatch `loginSuccess(token, user)`
-6. **Persist to Storage** → Save token/user to `localStorage` and cookies
+3. **API Call** → POST to `{API_BASE_URL}/login` with username/password + `credentials: 'include'`
+4. **Cookie Response** → Backend sets HTTP-only cookie with JWT token
+5. **Store in Redux** → Dispatch `loginSuccess(user)` — note: no token in Redux
+6. **Persist User Data** → Save user profile to `localStorage` only (not token)
 7. **Redirect** → Navigate to `/home`
-8. **Hydration on Reload** → `store.js` restores auth from localStorage on app startup
+8. **Hydration on Reload** → `store.js` restores user from localStorage; token restored from cookie automatically
 
 ### State Management (Redux Toolkit)
 
@@ -86,16 +127,18 @@ primary-app/
   user: {                     // Current user data
     id, username, email, role
   },
-  token: "jwt-token...",      // JWT for API requests
+  token: null,                // Token NO LONGER STORED (in HTTP-only cookie instead)
   loading: boolean,           // Login/logout in progress
-  error: string               // Error message (if any)
+  error: string,              // Error message (if any)
+  hydrationComplete: boolean  // Hydration from localStorage done
 }
 ```
 
 **Hydration Flow** (`store/store.js`):
 
-- On app startup, restores auth from `localStorage`
-- Dispatches `loginSuccess()` if token & user exist
+- On app startup, restores user data from `localStorage` only
+- Token is automatically included from HTTP-only cookie (transparent to JavaScript)
+- Dispatches `loginSuccess()` if user data exists
 - Dispatches `setHydrationComplete()` when done
 - Prevents flash of login page on reload
 
@@ -113,21 +156,52 @@ primary-app/
 
 Checks `state.auth.isLoggedIn` — redirects to `/login` if false.
 
-### API Communication
+### API Communication (Updated v1.1)
 
 **BaseURL Resolution** (`utils/apiClient.js`):
 
 - Reads `REACT_APP_API_BASE_URL` from `.env`
 - Fallback: `http://localhost:8800` for local development
 
-**Token Injection** (Frontend responsibility):
+**Credential Inclusion** (HTTP-only Cookie Pattern):
 
 ```javascript
-const token = useSelector(state => state.auth.token);
-const headers = {
-  'Content-Type': 'application/json',
-  'Authorization': `Bearer ${token}`
-};
+// All API calls now include credentials
+fetch(url, {
+  method: 'POST',
+  credentials: 'include',  // Automatically includes HTTP-only cookie
+  headers: {
+    'Content-Type': 'application/json'
+    // NO Authorization header needed
+  },
+  body: JSON.stringify(data)
+})
+```
+
+**Token Not Injected By JavaScript**:
+
+- Backend sends JWT in HTTP-only cookie during login
+- Browser automatically includes cookie with all same-origin requests
+- JavaScript cannot read or modify the token
+- Provides XSS protection: stealing `document.cookie` cannot access auth token
+
+**CSRF Token Handling** (Optional):
+
+```javascript
+// Retrieve CSRF token for protected operations
+const csrfResponse = await fetch(`${API_BASE_URL}/csrf-token`, {
+  credentials: 'include'
+});
+const { csrfToken } = await csrfResponse.json();
+
+// Include in request header for POST/PUT/DELETE (optional, backend validates)
+fetch(url, {
+  method: 'POST',
+  credentials: 'include',
+  headers: {
+    'X-CSRF-Token': csrfToken
+  }
+})
 ```
 
 **Error Handling**:
@@ -221,6 +295,92 @@ npm test
 # Eject (one-way operation—not recommended)
 npm run eject
 ```
+
+## Components
+
+### Core Components
+
+**ProtectedRoute** (`Components/ProtectedRoute.jsx`)
+- Wrapper component enforcing authentication
+- Redirects to `/login` if not authenticated
+- Checks `state.auth.isLoggedIn` before rendering children
+
+**NavBar** (`Components/NavBar.js`)
+- Top navigation with authenticated route links
+- Logo + nav links (Home, Map, Profile)
+- Logout button with callback handler
+- Responsive design with flexbox layout
+
+### Home Feed Components (New)
+
+**Home** (`Pages/Home.jsx`)
+- Main feed page integrating all feed components
+- Manages loading/error states
+- Conditionally renders CreatePostModal, FeedFilters, PostsFeed
+
+**CreatePostModal** (`Components/CreatePostModal.jsx`)
+- File upload form with preview
+- Inputs: title, description, visibility, tags
+- Drag-drop support for media files
+- Dispatches `createPost` Redux thunk
+- Shows success/error messages with auto-dismiss
+
+**FeedFilters** (`Components/FeedFilters.jsx`)
+- Dropdown filters: role (filter_by), media type, sort order
+- Updates Redux `postsSlice.filters` on change
+- Triggers feed refetch via `fetchFeedPosts`
+
+**PostsFeed** (`Components/PostsFeed.jsx`)
+- Infinite scroll pagination with Intersection Observer
+- Renders array of `PostCard` components
+- Auto-loads next page when user scrolls to bottom
+- Shows loading indicator and "no posts" state
+
+**PostCard** (`Components/PostCard.jsx`)
+- Individual post display with:
+  - User avatar (username + role badge)
+  - Media preview (image/video thumbnail)
+  - Post title and description
+  - Tags list
+  - Like/comment counters
+  - Delete button (owner only)
+- Responsive design with hover effects
+
+### Redux State Management
+
+**postsSlice** (`store/postsSlice.js`):
+```javascript
+{
+  feed: {
+    posts: [],          // Current page posts
+    page: 1,
+    limit: 10,
+    total: 0,
+    hasMore: true,
+    loading: false,
+    error: null
+  },
+  createPostForm: {
+    loading: false,
+    success: false,
+    error: null
+  },
+  filters: {
+    filter_by: 'all',   // photographer|videographer|musician|artist|user|all
+    media_type: 'all',  // photo|video|all
+    sort: 'newest'      // newest|popular
+  },
+  currentPost: null,
+  userPosts: []
+}
+```
+
+**Async Thunks**:
+- `fetchFeedPosts` - Paginated feed with filters
+- `createPost` - Upload media + post metadata
+- `deletePost` - Delete own posts
+- `fetchPostById` - Get single post details
+- `fetchUserPosts` - Get user's public posts
 
 ## Component Patterns
 

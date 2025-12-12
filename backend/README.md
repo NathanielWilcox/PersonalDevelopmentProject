@@ -2,21 +2,46 @@
 
 ## Overview
 
-Node.js/Express backend for a social platform serving photographers, videographers, actors, and models. Implements JWT-based authentication, role-based access control, input validation, rate limiting, and custom error handling.
+Node.js/Express backend for a social platform serving photographers, videographers, actors, and models. Implements JWT-based authentication with HTTP-only cookies, role-based access control, input validation, rate limiting, CSRF protection, and custom error handling.
 
-**Stack**: Node.js + Express + MySQL 8.0 + JWT + bcryptjs
+**Stack**: Node.js + Express + MySQL 8.0 + JWT + bcryptjs + Helmet + csurf
 
 **Port**: 8800 (configurable via `BACKEND_PORT` env var)
+
+## Security Features (v1.1)
+
+### HTTP-Only Cookie Authentication
+- JWT tokens stored in HTTP-only, sameSite=strict cookies (inaccessible to JavaScript)
+- Prevents XSS-based token theft
+- Automatic cookie inclusion with all requests (via `credentials: 'include'`)
+- 1-hour token expiration enforced
+
+### CSRF Protection
+- `csurf` middleware with cookie-based token storage
+- `/csrf-token` endpoint returns fresh tokens for state-changing operations
+- All POST, PUT, DELETE requests verified against CSRF tokens
+
+### Security Headers (Helmet)
+- Content Security Policy (CSP) to prevent inline script injection
+- X-Frame-Options to prevent clickjacking
+- HSTS for HTTPS enforcement
+- X-Content-Type-Options to prevent MIME sniffing
+- Additional: COEP, COOP, Referrer-Policy headers
+
+### Password Security
+- bcryptjs with 10 salt rounds
+- Never stored or transmitted in plain text
 
 ## Architecture
 
 ### Core Components
 
-- **Authentication**: JWT tokens with 1-hour expiration, verified via `verifyToken` middleware
+- **Authentication**: JWT tokens with 1-hour expiration, verified via `verifyToken` middleware (reads from HTTP-only cookies)
 - **Authorization**: Role-based access control via `verifyRoles` middleware
 - **Error Handling**: Custom error classes with automatic HTTP status code mapping
 - **Input Validation**: Schema-based validation with detailed field-level error reporting
 - **Rate Limiting**: Per-endpoint protection against abuse
+- **CSRF Protection**: Token-based CSRF prevention with `csurf` middleware
 - **Database**: Connection pooling with retry logic
 
 ## Database Schema
@@ -110,8 +135,13 @@ Authenticate user and receive JWT token.
   "username": "username",
   "email": "user@example.com",
   "role": "user",
-  "token": "eyJhbGciOiJIUzI1NiIs..."
+  "message": "Login successful"
 }
+```
+
+**Cookie Set**: JWT token stored in HTTP-only cookie
+```
+Set-Cookie: token=eyJhbGciOiJIUzI1NiIs...; HttpOnly; Secure; SameSite=Strict; Max-Age=3600
 ```
 
 **Error Responses**:
@@ -120,7 +150,12 @@ Authenticate user and receive JWT token.
 - `401`: Invalid username or password
 - `500`: Database error
 
-**Notes**: Token expires in 1 hour. Must include `Authorization: Bearer <token>` in headers for protected routes.
+**Notes**: 
+- Token expires in 1 hour and is stored in an HTTP-only cookie
+- Token is NOT returned in the JSON response body (only in Set-Cookie header)
+- Browser automatically includes the cookie with subsequent requests
+- Token is inaccessible to JavaScript, preventing XSS token theft
+- CSRF tokens required for state-changing operations (see `/csrf-token` endpoint)
 
 ---
 
@@ -128,7 +163,7 @@ Authenticate user and receive JWT token.
 
 Logout current user. Invalidates session on client-side.
 
-**Authentication**: Required (Bearer token)
+**Authentication**: Required (Bearer token or HTTP-only cookie)
 
 **Success Response (200)**:
 
@@ -137,6 +172,28 @@ Logout current user. Invalidates session on client-side.
   "message": "Successfully logged out"
 }
 ```
+
+**Notes**: Token remains in cookie until expiration or next login clears it. No server-side logout clearing currently implemented.
+
+---
+
+### CSRF Protection Endpoints
+
+#### GET /csrf-token
+
+Retrieve a fresh CSRF token for state-changing operations.
+
+**Authentication**: Optional (works for both authenticated and unauthenticated users)
+
+**Success Response (200)**:
+
+```json
+{
+  "csrfToken": "thPkO8Sw-TUBOMR_D91RtQcSSbpPrjxviWZE"
+}
+```
+
+**Security Headers**: Response includes CSP, X-Frame-Options, HSTS, and other security headers via Helmet middleware.
 
 ---
 
@@ -266,6 +323,103 @@ Delete a user profile (admin only).
 - `404`: User not found
 - `500`: Database error
 
+## Posts & Home Feed Endpoints
+
+### POST /api/posts
+
+Create a new post with media upload.
+
+**Rate Limit**: 20 posts per hour per IP  
+**Authentication**: Required (Bearer token)  
+**Content-Type**: multipart/form-data
+
+**Request**:
+- `media` (File, required): Image or video file (JPG, PNG, GIF, WebP, MP4, QuickTime, AVI; max 50MB)
+- `title` (string, required): Post title (1-100 chars)
+- `description` (string, optional): Post description (0-500 chars)
+- `visibility` (enum, optional): 'public', 'private', 'friends' (default: 'public')
+- `tags` (string[], optional): Array of tags for filtering
+
+**Response (201)**:
+```json
+{
+  "postId": 1,
+  "message": "Post created successfully",
+  "mediaUrl": "/uploads/users/1/1702123456789-image.jpg"
+}
+```
+
+### GET /api/posts/feed
+
+Get paginated feed with filters and sorting.
+
+**Rate Limit**: 30 requests per 5 minutes per IP  
+**Authentication**: Required
+
+**Query Parameters**:
+- `page` (int, default: 1): Page number
+- `limit` (int, default: 10): Posts per page
+- `filter_by` (string, default: 'all'): 'photographer', 'videographer', 'musician', 'artist', 'user', 'all'
+- `media_type` (string, default: 'all'): 'photo', 'video', 'all'
+- `sort` (string, default: 'newest'): 'newest', 'popular'
+
+**Response (200)**:
+```json
+{
+  "posts": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "title": "My Photo",
+      "description": "Beautiful landscape",
+      "media_type": "photo",
+      "media_url": "/uploads/users/1/image.jpg",
+      "username": "photographer1",
+      "role": "photographer",
+      "likes_count": 5,
+      "comments_count": 2,
+      "created_at": "2024-01-01T12:00:00Z",
+      "tags": ["portrait", "professional"]
+    }
+  ],
+  "page": 1,
+  "limit": 10,
+  "total": 50,
+  "hasMore": true
+}
+```
+
+### DELETE /api/posts/:id
+
+Delete a post (owner only).
+
+**Authentication**: Required  
+**Authorization**: Post owner only
+
+**Response (200)**:
+```json
+{"message": "Post deleted successfully"}
+```
+
+**Error Responses**:
+- `401`: Not authenticated
+- `403`: Not post owner
+- `404`: Post not found
+
+### Database
+
+**posts** table:
+- `id` INT PRIMARY KEY AUTO_INCREMENT
+- `user_id` INT NOT NULL (FK to userprofile)
+- `title` VARCHAR(100), `description` VARCHAR(500)
+- `media_type` ENUM('photo', 'video', 'text')
+- `media_url` VARCHAR(255) — Supports both local paths and cloud URLs
+- `visibility` ENUM('public', 'private', 'friends')
+- `created_at`, `updated_at` TIMESTAMP
+- `likes_count`, `comments_count` INT DEFAULT 0
+
+**Indexes**: idx_user_id, idx_created_at, idx_visibility_created, idx_media_type
+
 ### Rate Limiting Summary
 
 All endpoints are protected by request rate limiting:
@@ -275,6 +429,8 @@ All endpoints are protected by request rate limiting:
 | POST /login          | 15 minutes  | 10          | 429        |
 | POST /api/create     | 15 minutes  | 10          | 429        |
 | GET /api/userprofile | 15 minutes  | 100         | 429        |
+| POST /api/posts      | 1 hour      | 20          | 429        |
+| GET /api/posts/feed  | 5 minutes   | 30          | 429        |
 
 ## Error Handling
 
