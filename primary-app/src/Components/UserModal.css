@@ -1,0 +1,207 @@
+.user-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.user-modal {
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 32px rgba(0, 0, 0, 0.15);
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.user-modal-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background-color: transparent;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    color: #666;
+    z-index: 1001;
+    transition: color 0.2s;
+}
+
+.user-modal-close:hover {
+    color: #000;
+}
+
+.user-modal-loading,
+.user-modal-error {
+    padding: 40px 20px;
+    text-align: center;
+    color: #666;
+}
+
+.user-modal-error {
+    color: #d32f2f;
+}
+
+.user-modal-header {
+    display: flex;
+    align-items: center;
+    padding: 30px 20px 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.user-modal-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: #4caf50;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    font-weight: bold;
+    margin-right: 20px;
+}
+
+.user-modal-info h2 {
+    margin: 0;
+    font-size: 24px;
+    color: #000;
+}
+
+.user-modal-role {
+    margin: 5px 0 0 0;
+    color: #666;
+    font-size: 14px;
+    text-transform: capitalize;
+}
+
+.user-modal-stats {
+    display: flex;
+    justify-content: space-around;
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #999;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    font-size: 20px;
+    font-weight: bold;
+    color: #000;
+}
+
+.user-modal-actions {
+    display: flex;
+    gap: 10px;
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.btn-follow,
+.btn-message,
+.btn-edit {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-follow {
+    background-color: #4caf50;
+    color: white;
+}
+
+.btn-follow:hover {
+    background-color: #45a049;
+}
+
+.btn-message {
+    background-color: #2196f3;
+    color: white;
+}
+
+.btn-message:hover {
+    background-color: #0b7dda;
+}
+
+.btn-edit {
+    background-color: #2196f3;
+    color: white;
+    flex: 1;
+}
+
+.btn-edit:hover {
+    background-color: #0b7dda;
+}
+
+.user-modal-posts {
+    padding: 20px;
+}
+
+.user-modal-posts h3 {
+    margin: 0 0 15px 0;
+    font-size: 16px;
+    color: #000;
+}
+
+.posts-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.post-thumbnail {
+    width: 100%;
+    aspect-ratio: 1;
+    background-color: #f0f0f0;
+    border-radius: 6px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.post-thumbnail:hover {
+    transform: scale(1.05);
+}
+
+.post-thumbnail img,
+.post-thumbnail video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}

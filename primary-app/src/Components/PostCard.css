@@ -1,0 +1,243 @@
+/* Post Card Container */
+.post-card {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+    transition: box-shadow 0.2s;
+}
+
+.post-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Post Header */
+.post-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+}
+
+.post-user-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+    transition: opacity 0.2s;
+    border-radius: 4px;
+    padding: 8px;
+    margin: -8px;
+}
+
+.post-user-info:hover {
+    background-color: #f5f5f5;
+    opacity: 0.8;
+}
+
+.post-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4caf50, #2196f3);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.post-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.post-username {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.post-role {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #999;
+    text-transform: capitalize;
+}
+
+.post-date {
+    margin: 0;
+    font-size: 0.8rem;
+    color: #bbb;
+}
+
+.btn-delete {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #999;
+    padding: 0.5rem;
+    transition: color 0.2s;
+}
+
+.btn-delete:hover:not(:disabled) {
+    color: #ff6b6b;
+}
+
+.btn-delete:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Post Content */
+.post-title {
+    margin: 0;
+    padding: 0 1rem;
+    padding-top: 1rem;
+    font-size: 1.3rem;
+    color: #333;
+    word-wrap: break-word;
+}
+
+.post-description {
+    margin: 0.5rem 1rem 0;
+    color: #555;
+    line-height: 1.5;
+    word-wrap: break-word;
+}
+
+/* Post Media */
+.post-media {
+    width: 100%;
+    background-color: #f5f5f5;
+    margin: 1rem 0 0 0;
+    overflow: hidden;
+}
+
+.post-media img,
+.post-media video {
+    width: 100%;
+    height: auto;
+    display: block;
+    max-height: 500px;
+    object-fit: contain;
+}
+
+/* Post Tags */
+.post-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 1rem;
+}
+
+.tag {
+    display: inline-block;
+    background-color: #f0f0f0;
+    color: #4caf50;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.tag:hover {
+    background-color: #e8f5e9;
+}
+
+/* Post Stats */
+.post-stats {
+    display: flex;
+    gap: 1.5rem;
+    padding: 1rem;
+    border-top: 1px solid #eee;
+    border-bottom: 1px solid #eee;
+    color: #666;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.stat {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Post Actions */
+.post-actions {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.action-btn {
+    flex: 1;
+    padding: 0.75rem;
+    border: 1px solid #eee;
+    background-color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #666;
+    transition: all 0.2s;
+}
+
+.action-btn:hover {
+    background-color: #f9f9f9;
+    border-color: #4caf50;
+    color: #4caf50;
+}
+
+.action-btn:active {
+    transform: scale(0.98);
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+    .post-card {
+        margin-bottom: 1rem;
+        border-radius: 0;
+    }
+
+    .post-header {
+        padding: 0.75rem;
+    }
+
+    .post-title {
+        font-size: 1.1rem;
+        padding: 0 0.75rem;
+    }
+
+    .post-description {
+        padding: 0 0.75rem;
+    }
+
+    .post-media {
+        max-height: 300px;
+    }
+
+    .post-stats {
+        padding: 0.75rem;
+        gap: 1rem;
+        font-size: 0.85rem;
+    }
+
+    .post-actions {
+        padding: 0.75rem;
+        gap: 0.5rem;
+    }
+
+    .action-btn {
+        padding: 0.6rem 0.4rem;
+        font-size: 0.8rem;
+    }
+}

@@ -5,6 +5,9 @@ import mysql from 'mysql2';
 import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
+import csrf from 'csurf';
 import { serverConfig } from './config/config.js';
 import rateLimit from 'express-rate-limit';
 import { verifyToken, verifyRoles } from './utils/authMiddleware.js';
@@ -19,8 +22,34 @@ import {
     AuthenticationError,
     ConflictError
 } from './utils/errorHandling.js';
+import { uploadMiddleware, getMediaUrl, deleteMediaFile } from './utils/uploadMiddleware.js';
+import { validateMediaFile, detectMediaType, cleanPostData } from './utils/mediaHelpers.js';
+import { buildPostFiltersQuery, buildOrderClause, getPaginationOffset, formatPostsResponse, userOwnsPost, validatePostData } from './utils/postHelpers.js';
 
 const app = express();
+
+// Security middleware
+app.use(helmet());
+app.use(cookieParser());
+
+// CORS configuration - allow credentials
+app.use(cors({ 
+    origin: 'http://localhost:3000', 
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], 
+    allowedHeaders: ['Content-Type', 'Authorization'], 
+    credentials: true 
+}));
+
+// Body parser with limits
+app.use(express.json({ limit: '5mb' }));
+
+// CSRF protection middleware - can use cookies or request body
+const csrfProtection = csrf({ cookie: true });
+
+// Cookie-based CSRF token generation endpoint
+app.get('/csrf-token', csrfProtection, (req, res) => {
+    res.json({ csrfToken: req.csrfToken() });
+});
 
 // Database configuration
 const dbConfig = {
@@ -37,9 +66,6 @@ const dbConfig = {
 // Use a connection pool instead of a single connection
 const dbconn = mysql.createPool(dbConfig);
 const PORT = serverConfig.port || 8800;
-
-app.use(cors({ origin: 'http://localhost:3000', methods: ['GET', 'POST', 'PUT', 'DELETE'], allowedHeaders: ['Content-Type', 'Authorization'], credentials: true }));
-app.use(express.json());
 
 // Connect to the MySQL database
 async function connectToDatabase(retries = 5, delay = 2000) {
@@ -83,6 +109,23 @@ const loginLimiter = rateLimit({
     max: 10, // limit each IP to 10 login requests per windowMs
     message: { error: 'Too many login attempts from this IP, please try again after 15 minutes.' }
 });
+
+// Rate limiter for post creation endpoint
+const createPostLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 20, // Max 20 posts per hour
+    message: { error: 'Too many posts created. Please try again later.' }
+});
+
+// Rate limiter for feed endpoint
+const getFeedLimiter = rateLimit({
+    windowMs: 5 * 60 * 1000, // 5 minutes
+    max: 30, // 30 requests per 5 minutes
+    message: { error: 'Too many feed requests. Please slow down.' }
+});
+
+// Serve uploaded files statically (for local filesystem MVP)
+app.use('/uploads', express.static('uploads'));
 
 // Test endpoint to verify server is running
 app.get('/', (req, res) => {
@@ -218,7 +261,22 @@ app.post('/login', loginLimiter, asyncHandler(async (req, res) => {
         };
     });
 
-    res.json(result);
+    // Set JWT in HTTP-only cookie (cannot be accessed by JavaScript, secure against XSS)
+    res.cookie('token', result.token, {
+        httpOnly: true,      // Cannot be accessed by JavaScript
+        secure: false,       // Set to true in production with HTTPS
+        sameSite: 'strict',  // Prevent CSRF attacks
+        maxAge: 3600000      // 1 hour in milliseconds
+    });
+
+    // Return user data (NOT token) in response
+    res.json({
+        id: result.id,
+        username: result.username,
+        email: result.email,
+        role: result.role,
+        message: 'Login successful'
+    });
 }));
 
 /**
@@ -333,6 +391,267 @@ app.delete('/userprofile/:id',
         });
 
         res.json({ message: 'User profile deleted successfully!' });
+    }));
+
+/**
+ * @api {post} /api/posts Create Post
+ * @apiName CreatePost
+ * @apiGroup Posts
+ * @apiDescription Create a new post with media upload
+ */
+app.post('/api/posts',
+    createPostLimiter,
+    verifyToken,
+    uploadMiddleware.single('media'),
+    asyncHandler(async (req, res) => {
+        // Validate file upload
+        const fileValidation = validateMediaFile(req.file);
+        if (!fileValidation.isValid) {
+            throw new ValidationError(fileValidation.error);
+        }
+
+        // Validate input data
+        const { title, description, visibility, tags } = req.body;
+        const postValidation = validatePostData({ title, description, visibility });
+        if (!postValidation.isValid) {
+            throw new ValidationError('Validation failed', postValidation.errors);
+        }
+
+        // Detect media type from file
+        const media_type = detectMediaType(req.file.mimetype);
+
+        const result = await withDbErrorHandling(async () => {
+            // Get relative media URL for database storage
+            const mediaUrl = getMediaUrl(req.user.id, req.file.filename);
+
+            // Insert post into database
+            const [data] = await dbconn.promise().query(
+                `INSERT INTO posts (user_id, title, description, media_type, media_url, visibility, created_at, updated_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+                [req.user.id, title, description || null, media_type, mediaUrl, visibility || 'public']
+            );
+
+            // Add tags if provided
+            if (tags && Array.isArray(tags) && tags.length > 0) {
+                for (const tag of tags) {
+                    if (tag.trim()) {
+                        await dbconn.promise().query(
+                            'INSERT INTO post_tags (post_id, tag) VALUES (?, ?)',
+                            [data.insertId, tag.trim()]
+                        );
+                    }
+                }
+            }
+
+            return {
+                postId: data.insertId,
+                message: 'Post created successfully',
+                mediaUrl
+            };
+        });
+
+        res.status(201).json(result);
+    }));
+
+/**
+ * @api {get} /api/posts/feed Get Feed
+ * @apiName GetFeed
+ * @apiGroup Posts
+ * @apiDescription Get random users' posts with pagination and filters
+ * @apiQuery {Number} page Page number (default: 1)
+ * @apiQuery {Number} limit Posts per page (default: 10)
+ * @apiQuery {String} filter_by Role filter: photographer, videographer, musician, artist, user, all (default: all)
+ * @apiQuery {String} media_type Filter: photo, video, text, all (default: all)
+ * @apiQuery {String} sort Sort by: newest, popular (default: newest)
+ */
+app.get('/api/posts/feed',
+    getFeedLimiter,
+    verifyToken,
+    asyncHandler(async (req, res) => {
+        const { page = 1, limit = 10, filter_by = 'all', media_type = 'all', sort = 'newest' } = req.query;
+
+        // Build filter and pagination
+        const { whereClause, params } = buildPostFiltersQuery({
+            filterBy: filter_by,
+            mediaType: media_type,
+            visibility: 'public'
+        });
+        const orderClause = buildOrderClause(sort);
+        const offset = getPaginationOffset(page, limit);
+        const limitNum = Math.max(1, parseInt(limit) || 10);
+
+        const result = await withDbErrorHandling(async () => {
+            // Get posts with user info
+            const [posts] = await dbconn.promise().query(`
+                SELECT 
+                    p.id,
+                    p.user_id,
+                    p.title,
+                    p.description,
+                    p.media_type,
+                    p.media_url,
+                    p.likes_count,
+                    p.comments_count,
+                    p.created_at,
+                    p.updated_at,
+                    u.username,
+                    u.role,
+                    (SELECT COUNT(*) FROM post_tags WHERE post_id = p.id) as tag_count
+                FROM posts p
+                JOIN userprofile u ON p.user_id = u.idusers
+                WHERE ${whereClause}
+                ORDER BY ${orderClause}
+                LIMIT ? OFFSET ?
+            `, [...params, limitNum, offset]);
+
+            // Get total count for pagination
+            const [countResult] = await dbconn.promise().query(`
+                SELECT COUNT(*) as total FROM posts p
+                JOIN userprofile u ON p.user_id = u.idusers
+                WHERE ${whereClause}
+            `, params);
+
+            const total = countResult[0].total;
+            const hasMore = offset + limitNum < total;
+
+            return formatPostsResponse(posts, page, limitNum, total);
+        });
+
+        res.json(result);
+    }));
+
+/**
+ * @api {get} /api/posts/:id Get Single Post
+ * @apiName GetPost
+ * @apiGroup Posts
+ * @apiDescription Get a single post with all details and tags
+ */
+app.get('/api/posts/:id',
+    verifyToken,
+    asyncHandler(async (req, res) => {
+        const result = await withDbErrorHandling(async () => {
+            const [posts] = await dbconn.promise().query(`
+                SELECT 
+                    p.id,
+                    p.user_id,
+                    p.title,
+                    p.description,
+                    p.media_type,
+                    p.media_url,
+                    p.likes_count,
+                    p.comments_count,
+                    p.created_at,
+                    p.updated_at,
+                    u.username,
+                    u.role
+                FROM posts p
+                JOIN userprofile u ON p.user_id = u.idusers
+                WHERE p.id = ? AND p.visibility = 'public'
+            `, [req.params.id]);
+
+            if (!posts.length) {
+                throw new ResourceNotFoundError('Post not found');
+            }
+
+            // Get tags for this post
+            const [tags] = await dbconn.promise().query(
+                'SELECT tag FROM post_tags WHERE post_id = ?',
+                [req.params.id]
+            );
+
+            return { ...posts[0], tags: tags.map(t => t.tag) };
+        });
+
+        res.json(result);
+    }));
+
+/**
+ * @api {delete} /api/posts/:id Delete Post
+ * @apiName DeletePost
+ * @apiGroup Posts
+ * @apiDescription Delete a post (owner only)
+ */
+app.delete('/api/posts/:id',
+    verifyToken,
+    asyncHandler(async (req, res) => {
+        const result = await withDbErrorHandling(async () => {
+            const [posts] = await dbconn.promise().query(
+                'SELECT user_id, media_url FROM posts WHERE id = ?',
+                [req.params.id]
+            );
+
+            if (!posts.length) {
+                throw new ResourceNotFoundError('Post not found');
+            }
+
+            if (!userOwnsPost(req.user.id, posts[0].user_id)) {
+                throw new AuthorizationError('You can only delete your own posts');
+            }
+
+            // Delete the post
+            const [data] = await dbconn.promise().query(
+                'DELETE FROM posts WHERE id = ?',
+                [req.params.id]
+            );
+
+            // Delete the media file from filesystem
+            if (posts[0].media_url) {
+                deleteMediaFile(posts[0].media_url);
+            }
+
+            return data;
+        });
+
+        res.json({ message: 'Post deleted successfully' });
+    }));
+
+/**
+ * @api {get} /api/posts/user/:userId Get User Posts
+ * @apiName GetUserPosts
+ * @apiGroup Posts
+ * @apiDescription Get all public posts by a specific user
+ */
+app.get('/api/posts/user/:userId',
+    verifyToken,
+    asyncHandler(async (req, res) => {
+        const { page = 1, limit = 10 } = req.query;
+        const offset = getPaginationOffset(page, limit);
+        const limitNum = Math.max(1, parseInt(limit) || 10);
+
+        const result = await withDbErrorHandling(async () => {
+            // Get posts for this user
+            const [posts] = await dbconn.promise().query(`
+                SELECT 
+                    p.id,
+                    p.user_id,
+                    p.title,
+                    p.description,
+                    p.media_type,
+                    p.media_url,
+                    p.likes_count,
+                    p.comments_count,
+                    p.created_at,
+                    p.updated_at,
+                    u.username,
+                    u.role,
+                    (SELECT COUNT(*) FROM post_tags WHERE post_id = p.id) as tag_count
+                FROM posts p
+                JOIN userprofile u ON p.user_id = u.idusers
+                WHERE p.user_id = ? AND p.visibility = 'public'
+                ORDER BY p.created_at DESC
+                LIMIT ? OFFSET ?
+            `, [req.params.userId, limitNum, offset]);
+
+            // Get total count
+            const [countResult] = await dbconn.promise().query(
+                'SELECT COUNT(*) as total FROM posts WHERE user_id = ? AND visibility = ?',
+                [req.params.userId, 'public']
+            );
+
+            return formatPostsResponse(posts, page, limitNum, countResult[0].total);
+        });
+
+        res.json(result);
     }));
 
 // Server startup with error handling

@@ -1,15 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
 import '../index.css';
-import { useAuth } from '../utils/authContext';
-
+import CreatePostModal from '../Components/CreatePostModal';
+import PostsFeed from '../Components/PostsFeed';
+import FeedFilters from '../Components/FeedFilters';
+import './Home.css';
 
 const Home = () => {
-    // Use useAuth hook to get the current user and auth state
-    const { user, isLoggedIn } = useAuth(); // isLoggedIn is used to check if the user is logged in, line
-    // Debugging log to check user
-    console.log('Home user:', user);
-    // If user is not available, you can handle it accordingly
-    if (!user) {
+    const user = useSelector(state => state.auth.user);
+    const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [filters, setFilters] = useState({
+        filterBy: 'all',
+        mediaType: 'all',
+        sort: 'newest'
+    });
+
+    // If user is not logged in
+    if (!isLoggedIn) {
         return (
             <div className="home-container">
                 <h1>Welcome to the Creative Community</h1>
@@ -17,30 +25,38 @@ const Home = () => {
             </div>
         );
     }
-    // Debugging log to check if user is logged in
-    console.log('Home isLoggedIn:', isLoggedIn); // Debugging log to check login status
-    // If user is available, you can render the home page content
-    // You can also use user to display user-specific information or features
-    // For example, you can display the user's name or profile picture
-    console.log('Home user name:', user.name || user.username);
-    console.log('Home user email:', user.email);
-    console.log('Home user avatar:', user.avatar);
-    // You can also use user to fetch user-specific data from the backend if needed
-    // For example, you can fetch user posts, profiles, or locations from the backend
-    
 
-    // Render the home page content
     return (
         <div className="home-container">
-            <h1>Welcome to the Creative Community</h1>
-            <p>
-                Connect with artists, musicians, and other creatives. Share your work, discover new talent, and collaborate on projects.
-            </p>
+            <div className="home-header">
+                <div className="header-content">
+                    <h1>Welcome, {user?.username}!</h1>
+                    <p>Discover and share work with creative professionals</p>
+                </div>
+                <button
+                    className="btn btn-create-post"
+                    onClick={() => setIsCreateModalOpen(true)}
+                >
+                    + Create Post
+                </button>
+            </div>
+
+            {/* Feed Filters */}
+            <FeedFilters filters={filters} onFilterChange={setFilters} />
+
+            {/* Posts Feed with Infinite Scroll */}
+            <div className="feed-wrapper">
+                <PostsFeed filters={filters} />
+            </div>
+
+            {/* Create Post Modal */}
+            <CreatePostModal
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+                onSuccess={() => setIsCreateModalOpen(false)}
+            />
         </div>
     );
-}
+};
 
 export default Home;
-// TODO: Build main component(Feed of posts, profiles, locations, that artists, musicians, and other creatives can share with each other. With a focus on community building and collaboration.)
-// TODO: Add a search bar to the home page that allows users to search for posts, profiles, and locations. (Only to be used by logged in users. No messaging capability, just discovery and their own contact info[that the user can choose to share or not]. And a way to report posts that are inappropriate or offensive.)
-// TODO: Add a way for users to filter posts by category (e.g. music, art, etc.). (Only to be used by logged in users. A like feature, and an anonymous repost, this is about connecting people with artists, musicians, and other creatives. Not about social media.)

@@ -2,19 +2,25 @@ import jwt from 'jsonwebtoken';
 import { AuthenticationError, AuthorizationError, withJwtErrorHandling } from './errorHandling.js';
 
 /**
- * Middleware to verify JWT token
+ * Middleware to verify JWT token from HTTP-only cookie or Authorization header
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  * @param {Function} next - Express next function
  */
 export const verifyToken = (req, res, next) => {
     try {
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            throw new AuthenticationError('Missing or invalid authorization header');
+        // First try to get token from HTTP-only cookie
+        let token = req.cookies?.token;
+
+        // Fallback to Authorization header if no cookie
+        if (!token) {
+            const authHeader = req.headers.authorization;
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                throw new AuthenticationError('Missing or invalid authorization header');
+            }
+            token = authHeader.split(' ')[1];
         }
 
-        const token = authHeader.split(' ')[1];
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         req.user = decoded;
         next();

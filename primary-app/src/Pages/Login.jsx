@@ -17,7 +17,6 @@ const Login = () => {
 
     // Get auth error from Redux state
     const authError = useSelector((state) => state.auth.error);
-    const isLoading = useSelector((state) => state.auth.loading);
 
     // Display auth errors in popup
     useEffect(() => {
@@ -51,6 +50,7 @@ const Login = () => {
 
         const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/create`, {
             method: 'POST',
+            credentials: 'include',  // Include HTTP-only cookies
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password, email, role })
         });

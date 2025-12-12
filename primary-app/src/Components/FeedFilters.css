@@ -1,0 +1,114 @@
+/* Feed Filters Container */
+.feed-filters {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2rem;
+    padding: 0;
+}
+
+.filters-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    padding: 1.5rem;
+}
+
+/* Filter Group */
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.filter-group label {
+    font-weight: 600;
+    color: #333;
+    font-size: 0.95rem;
+}
+
+.filter-group select {
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.95rem;
+    color: #333;
+    background-color: white;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    font-family: inherit;
+}
+
+.filter-group select:hover {
+    border-color: #4caf50;
+}
+
+.filter-group select:focus {
+    outline: none;
+    border-color: #4caf50;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+}
+
+/* Active Filter Indicator */
+.filter-group select[value]:not([value="all"]) {
+    background: linear-gradient(to right, #f0f8f0 0%, white 30%);
+    border-color: #4caf50;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .filters-container {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .feed-filters {
+        margin-bottom: 1rem;
+        border-radius: 0;
+    }
+
+    .filters-container {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+        padding: 1rem;
+    }
+
+    .filter-group label {
+        font-size: 0.9rem;
+    }
+
+    .filter-group select {
+        padding: 0.65rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* Dark mode support (optional) */
+@media (prefers-color-scheme: dark) {
+    .feed-filters {
+        background-color: #1e1e1e;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .filter-group label {
+        color: #e0e0e0;
+    }
+
+    .filter-group select {
+        background-color: #2a2a2a;
+        color: #e0e0e0;
+        border-color: #444;
+    }
+
+    .filter-group select:hover {
+        border-color: #4caf50;
+    }
+
+    .filter-group select[value]:not([value="all"]) {
+        background: linear-gradient(to right, rgba(76, 175, 80, 0.1) 0%, #2a2a2a 30%);
+        border-color: #4caf50;
+    }
+}

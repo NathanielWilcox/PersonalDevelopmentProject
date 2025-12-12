@@ -1,10 +1,9 @@
 import { loginStart, loginSuccess, loginFailure, logout } from '../store/authSlice';
-import Cookies from 'js-cookie';
 import { handleApiResponse } from './errorHandling';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
-// Enhanced login handler with consistent error handling
+// Enhanced login handler with secure cookie-based auth
 const handleLogin = (userData, navigate) => async (dispatch) => {
     console.log('🔵 handleLogin called with:', userData);
     dispatch(loginStart());
@@ -20,6 +19,7 @@ const handleLogin = (userData, navigate) => async (dispatch) => {
         const response = await fetch(`${API_BASE_URL}/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',  // Include cookies with request
             body: JSON.stringify(userData)
         });
 
@@ -27,19 +27,15 @@ const handleLogin = (userData, navigate) => async (dispatch) => {
         const data = await handleApiResponse(response);
         console.log('🔵 Response data:', data);
 
-        const { id, username, email, role, token } = data;
-        console.log('🔵 Extracted token:', token ? token.substring(0, 30) + '...' : 'NO TOKEN');
+        const { id, username, email, role } = data;
+        console.log('✅ Login successful - token stored in HTTP-only cookie');
 
-        // Store auth data
-        localStorage.setItem('token', token);
+        // Store user data ONLY (token is in HTTP-only cookie, inaccessible to JavaScript)
         localStorage.setItem('user', JSON.stringify({ id, username, email, role }));
 
-        Cookies.set('token', token, { expires: 7, secure: true });
-        Cookies.set('username', username, { expires: 7, secure: true });
-
         // Update application state
-        console.log('✅ Dispatching loginSuccess with user:', { id, username, email, role }, 'and token');
-        dispatch(loginSuccess({ user: { id, username, email, role }, token }));
+        console.log('✅ Dispatching loginSuccess with user:', { id, username, email, role });
+        dispatch(loginSuccess({ user: { id, username, email, role }, token: null }));
 
         if (navigate) {
             console.log('🔵 Navigating to /home');
@@ -48,7 +44,7 @@ const handleLogin = (userData, navigate) => async (dispatch) => {
     } catch (error) {
         const message = error.status === 401 ? 'Invalid username or password' :
             error.message || 'Login failed, please try again';
-        console.error('❌ Login error:', error);
+        console.error('❌ Login failed:', message);
         dispatch(loginFailure(message));
     }
 };
@@ -56,11 +52,9 @@ const handleLogin = (userData, navigate) => async (dispatch) => {
 // Enhanced logout handler
 const handleLogout = (dispatch, navigate) => {
     console.log('🔵 handleLogout called');
-    // Clear user data and token from local storage and cookies
-    localStorage.removeItem('token');
+    // Clear user data from local storage
     localStorage.removeItem('user');
-    Cookies.remove('token');
-    Cookies.remove('username');
+    // Token is in HTTP-only cookie, automatically cleared by browser on 401 or logout
 
     // Dispatch logout action to update Redux state
     dispatch(logout());
